@@ -1,7 +1,7 @@
 const { Core } = require('@adobe/aio-sdk');
 
 // Use the unified repository (carriers live under fulcrum/carriers/<store>.json)
-const { listCarriers } = require('/home/fcs/shared/libFileRepository.js');
+const { listCarriers } = require('../../../shared/libFileRepository.js');
 
 const cors = {
   'Access-Control-Allow-Origin': '*',

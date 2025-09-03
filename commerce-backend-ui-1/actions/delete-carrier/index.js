@@ -3,7 +3,7 @@ const fetch = require('node-fetch');
 const utils = require('../utils.js');
 
 // Use the unified repository
-const { deleteCarrier } = require('/home/fcs/shared/libFileRepository.js');
+const { deleteCarrier } = require('../../../shared/libFileRepository.js');
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
