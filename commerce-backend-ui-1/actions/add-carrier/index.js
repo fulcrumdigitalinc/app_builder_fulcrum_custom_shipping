@@ -5,7 +5,7 @@ const utils = require('../utils.js');
 // Use the unified repository (low-level Files + carriers repo)
 const {
   upsertCarrier, // persist carriers under fulcrum/carriers/<store>.json
-} = require('/home/fcs/shared/libFileRepository.js');
+} = require('../../../shared/libFileRepository.js');
 
 function normalizeBaseUrl(u = '') {
   return u && !u.endsWith('/') ? (u + '/') : u;

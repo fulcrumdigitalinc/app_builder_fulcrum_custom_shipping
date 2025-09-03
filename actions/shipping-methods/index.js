@@ -6,7 +6,7 @@ const fetch = require('node-fetch');
 // Use the unified repository (carriers live under fulcrum/carriers/<store>.json)
 const {
   listCarriers,
-} = require('/home/fcs/shared/libFileRepository.js');
+} = require('../../shared/libFileRepository.js');
 
 // --- utils ---
 const b64decode = (b64) => {
