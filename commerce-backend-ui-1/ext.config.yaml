@@ -1,0 +1,77 @@
+operations:
+  view:
+    - type: web
+      impl: index.html
+
+actions: actions
+web: web-src
+
+runtimeManifest:
+  packages:
+    admin-ui-sdk:
+      license: Apache-2.0
+      actions:
+        registration:
+          function: actions/registration/index.js
+          web: 'yes'
+          runtime: 'nodejs:22'
+          inputs:
+            LOG_LEVEL: debug
+          annotations:
+            require-adobe-auth: true
+            final: true
+          limits:
+            timeout: 60000
+            memory: 512
+            logs: 10
+
+    FulcrumCustomShippingMenu:
+      license: Apache-2.0
+      inputs:
+        LOG_LEVEL: debug
+        AIO_CLI_ENV: $AIO_CLI_ENV
+        COMMERCE_BASE_URL: $COMMERCE_BASE_URL
+        OAUTH_CLIENT_ID: $OAUTH_CLIENT_ID
+        OAUTH_CLIENT_SECRET: $OAUTH_CLIENT_SECRET
+        OAUTH_TECHNICAL_ACCOUNT_ID: $OAUTH_TECHNICAL_ACCOUNT_ID
+        OAUTH_TECHNICAL_ACCOUNT_EMAIL: $OAUTH_TECHNICAL_ACCOUNT_EMAIL
+        OAUTH_SCOPES: $OAUTH_SCOPES
+        OAUTH_IMS_ORG_ID: $OAUTH_IMS_ORG_ID
+      annotations:
+        require-adobe-auth: true
+        final: true
+      limits:
+        timeout: 60000
+        memory: 512
+        logs: 10
+
+      actions:
+        commerce-rest-api:
+          function: actions/commerce/index.js
+          web: 'yes'
+          runtime: 'nodejs:22'
+
+        get-carriers:
+          function: actions/get-carriers/index.js
+          web: 'yes'
+          runtime: 'nodejs:22'
+
+        add-carrier:
+          function: actions/add-carrier/index.js
+          web: 'yes'
+          runtime: 'nodejs:22'
+
+        delete-carrier:
+          function: actions/delete-carrier/index.js
+          web: 'yes'
+          runtime: 'nodejs:22'
+
+        get-customer-groups:
+          function: actions/get-customer-groups/index.js
+          web: 'yes'
+          runtime: 'nodejs:22'
+
+        get-stores:
+          function: actions/get-stores/index.js
+          web: 'yes'
+          runtime: 'nodejs:22'

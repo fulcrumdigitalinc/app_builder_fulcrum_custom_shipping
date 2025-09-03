@@ -1,0 +1,8 @@
+{
+  "id": "fulcrum_custom_shipping",
+  "name": "fulcrum_custom_shipping",
+  "displayName": "Fulcrum Custom Shipping",
+  "description": "Out of process shipping management on App Builder",
+  "platform": "web",
+  "version": "1.0.0"
+}
