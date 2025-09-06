@@ -1,9 +1,7 @@
 const { Core } = require('@adobe/aio-sdk');
 const fetch = require('node-fetch');
+const FilesLib = require('@adobe/aio-lib-files');
 const utils = require('../utils.js');
-
-// Use the unified repository
-const { deleteCarrier } = require('../../../shared/libFileRepository.js');
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -11,15 +9,19 @@ const cors = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
+async function initFiles() {
+  if (FilesLib?.init) return FilesLib.init();
+  throw new Error('Unable to initialize aio-lib-files');
+}
+
 exports.main = async function (params) {
-  if ((params.__ow_method || '').toUpperCase() === 'OPTIONS') {
+  if (params.__ow_method === 'options') {
     return { statusCode: 204, headers: cors, body: '' };
   }
 
   const logger = Core.Logger('delete-carrier', { level: params.LOG_LEVEL || 'info' });
 
   try {
-    // ---- parse carrier code ----
     let code = params.code;
     if (!code && typeof params.__ow_body === 'string') {
       try { code = JSON.parse(params.__ow_body)?.code; } catch {}
@@ -28,11 +30,8 @@ exports.main = async function (params) {
       const q = new URLSearchParams(params.__ow_query);
       code = q.get('code');
     }
-    if (!code) {
-      return { statusCode: 400, headers: cors, body: { ok: false, message: 'Missing code' } };
-    }
+    if (!code) return { statusCode: 400, headers: cors, body: { ok: false, message: 'Missing code' } };
 
-    // ---- delete from Commerce API ----
     const clientId = process.env.OAUTH_CLIENT_ID || params.OAUTH_CLIENT_ID;
     const clientSecret = process.env.OAUTH_CLIENT_SECRET || params.OAUTH_CLIENT_SECRET;
     const scope = process.env.OAUTH_SCOPES || params.OAUTH_SCOPES;
@@ -49,21 +48,34 @@ exports.main = async function (params) {
     let delJson = null; try { delJson = JSON.parse(delRaw); } catch {}
     const deletedInCommerce = delRes.ok && delJson && delJson.success === true;
 
-    // ---- delete from repository ----
-    // Note: carriers in the repo are identified by id, not just code.
-    // Here we attempt to delete by treating "code" as id for simplicity.
-    // If your repo carriers have separate id vs code, adjust accordingly.
-    let repoDeleted = false;
+    let stateDeleted = false;
     try {
-      repoDeleted = await deleteCarrier('default', code);
+      const files = await initFiles();
+      const keyJson = `carrier_custom_${code}.json`;
+      const keyLegacy = `carrier_custom_${code}`; 
+
+      let deletedAny = false;
+      try {
+        await files.delete(keyJson);
+        deletedAny = true;
+      } catch (e1) {
+        // ignore
+      }
+      try {
+        await files.delete(keyLegacy);
+        deletedAny = true;
+      } catch (e2) {
+        // ignore
+      }
+      stateDeleted = deletedAny;
     } catch (e) {
-      logger.warn(`Repo delete failed for ${code}: ${e.message}`);
+      logger.warn(`Files delete failed for ${code}: ${e.message}`);
     }
 
     return {
       statusCode: 200,
       headers: cors,
-      body: { ok: true, code, deletedInCommerce, repoDeleted, delRaw }
+      body: { ok: true, code, deletedInCommerce, stateDeleted, delRaw }
     };
 
   } catch (e) {
