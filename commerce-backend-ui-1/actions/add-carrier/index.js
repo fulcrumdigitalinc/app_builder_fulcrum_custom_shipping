@@ -1,14 +1,13 @@
 const { Core } = require('@adobe/aio-sdk');
 const fetch = require('node-fetch');
+const FilesLib = require('@adobe/aio-lib-files');
 const utils = require('../utils.js');
 
-// Use the unified repository (low-level Files + carriers repo)
-const {
-  upsertCarrier, // persist carriers under fulcrum/carriers/<store>.json
-} = require('../../../shared/libFileRepository.js');
+function normalizeBaseUrl(u = '') { return u && !u.endsWith('/') ? (u + '/') : u; }
 
-function normalizeBaseUrl(u = '') {
-  return u && !u.endsWith('/') ? (u + '/') : u;
+async function initFiles() {
+  if (FilesLib?.init) return FilesLib.init();
+  throw new Error('Unable to initialize aio-lib-files');
 }
 
 const cors = {
@@ -17,7 +16,6 @@ const cors = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
-// ---------- Normalizers ----------
 function toBool(v) {
   if (v === '' || v === null || v === undefined) return null;
   if (typeof v === 'boolean') return v;
@@ -34,10 +32,9 @@ const toStrOrNull  = (v) => (v === '' || v === null || v === undefined) ? null :
 const toStrArray   = (arr) => Array.from(new Set((arr || []).map(String))).filter(Boolean);
 const toIntArray   = (arr) => (Array.isArray(arr) ? arr.map(n => Number(n)).filter(Number.isInteger) : []);
 
-// ---------- Custom variables schema ----------
 const CUSTOM_SCHEMA = {
   method_name: 'string',      // -> null
-  price: 'number',            // -> null
+  value: 'number',            // -> null
   minimum: 'number',          // -> null
   maximum: 'number',          // -> null
   customer_groups: 'intArray',// -> []
@@ -45,9 +42,7 @@ const CUSTOM_SCHEMA = {
   stores: 'strArray'          // -> []
 };
 
-function clearValueFor(type) {
-  return (type === 'intArray' || type === 'strArray') ? [] : null;
-}
+function clearValueFor(type) { return (type === 'intArray' || type === 'strArray') ? [] : null; }
 
 function normalizeCustomValue(type, value) {
   switch (type) {
@@ -60,11 +55,12 @@ function normalizeCustomValue(type, value) {
   }
 }
 
-// ---------- Build Commerce OOPE payload ----------
 function buildNativePayload(input) {
   const out = { code: String(input.code).trim() };
 
-  if (input.title !== undefined) out.title = String(input.title);
+  if (input.title !== undefined) {
+    out.title = String(input.title);
+  }
 
   if (input.stores !== undefined) out.stores = toStrArray(input.stores);
   if (input.countries !== undefined) out.countries = toStrArray(input.countries);
@@ -79,7 +75,6 @@ function buildNativePayload(input) {
   return out;
 }
 
-// ---------- Commerce helpers ----------
 async function getCarrierByCode(base, token, code) {
   const res = await fetch(`${base}V1/oope_shipping_carrier/${encodeURIComponent(code)}`, {
     method: 'GET',
@@ -91,7 +86,7 @@ async function getCarrierByCode(base, token, code) {
   return { exists: true, body: text };
 }
 
-async function upsertCarrierCommerce(base, token, nativePayload) {
+async function upsertCarrier(base, token, nativePayload) {
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
   const method = (await getCarrierByCode(base, token, nativePayload.code)).exists ? 'PUT' : 'POST';
   const url = `${base}V1/oope_shipping_carrier`;
@@ -101,24 +96,20 @@ async function upsertCarrierCommerce(base, token, nativePayload) {
   return { ok: resp.ok, status: resp.status, text, method };
 }
 
-// ---------- Action ----------
 exports.main = async function main(params) {
   const logger = Core.Logger('add-carrier', { level: params.LOG_LEVEL || 'info' });
 
   try {
-    // Handle CORS preflight
     if ((params.__ow_method || '').toUpperCase() === 'OPTIONS') {
       return { statusCode: 200, headers: cors, body: {} };
     }
 
-    // Ensure Commerce config
     const { COMMERCE_BASE_URL, OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET, OAUTH_SCOPES = 'commerce_api' } = params;
     if (!COMMERCE_BASE_URL) {
       return { statusCode: 500, headers: cors, body: { ok: false, message: 'Missing COMMERCE_BASE_URL' } };
     }
     const base = normalizeBaseUrl(COMMERCE_BASE_URL);
 
-    // Parse carrier payload
     let carrier = params.carrier;
     if (carrier && typeof carrier === 'string') { try { carrier = JSON.parse(carrier); } catch {} }
     if (!carrier) {
@@ -133,18 +124,15 @@ exports.main = async function main(params) {
       return { statusCode: 400, headers: cors, body: { ok: false, message: 'Missing carrier payload' } };
     }
 
-    // Validate title (Commerce API requires it)
     const hasTitle = carrier.title !== undefined && String(carrier.title).trim() !== '';
     if (!hasTitle) {
       return { statusCode: 400, headers: cors, body: { ok: false, message: 'Title is required by the REST API (POST/PUT)' } };
     }
 
-    // Get OAuth access token
-    const token = await utils.getAccessToken(OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET, OAUTH_SCOPES);
+    const token = await utils.getAccessToken(OAUTH_CLIENT_ID,OAUTH_CLIENT_SECRET,OAUTH_SCOPES);
 
-    // Build native Commerce payload and upsert carrier via Commerce API
     const nativePayload = buildNativePayload(carrier);
-    const up = await upsertCarrierCommerce(base, token, nativePayload);
+    const up = await upsertCarrier(base, token, nativePayload);
 
     if (!up.ok) {
       return {
@@ -161,7 +149,6 @@ exports.main = async function main(params) {
       };
     }
 
-    // Build custom variables payload (normalized)
     const vars = (carrier && typeof carrier.variables === 'object' && carrier.variables) || {};
     const hasVariablesObject = Object.prototype.hasOwnProperty.call(carrier, 'variables');
 
@@ -175,13 +162,42 @@ exports.main = async function main(params) {
       else if (hasVariablesObject) incomingCustom[key] = clearValueFor(type);
     }
 
-    // Persist custom variables into our carriers repository
-    const persisted = await upsertCarrier(carrier.stores || 'default', {
-      ...carrier,
-      ...incomingCustom,
-      code: nativePayload.code,
-      title: nativePayload.title,
-    });
+    const files = await initFiles();
+    const fileKey = `carrier_custom_${nativePayload.code}.json`;
+
+    let current = {};
+    try {
+      const buf = await files.read(fileKey); 
+      if (buf) {
+        const text = Buffer.isBuffer(buf) ? buf.toString('utf8') : String(buf);
+        if (text) current = JSON.parse(text);
+      }
+    } catch (e) {
+      // read error
+    }
+
+    const merged = { ...current, ...incomingCustom };
+
+    try {
+      await files.write(
+        fileKey,
+        Buffer.from(JSON.stringify(merged)),
+        { contentType: 'application/json' }
+      );
+    } catch (e) {
+      // write error
+    }
+
+    let persisted = {};
+    try {
+      const buf2 = await files.read(fileKey);
+      if (buf2) {
+        const text2 = Buffer.isBuffer(buf2) ? buf2.toString('utf8') : String(buf2);
+        if (text2) persisted = JSON.parse(text2);
+      }
+    } catch (e) {
+      // ignore
+    }
 
     return {
       statusCode: 200,

@@ -1,7 +1,14 @@
 const { Core } = require('@adobe/aio-sdk');
+const fetch = require('node-fetch');
+const FilesLib = require('@adobe/aio-lib-files');
+const utils = require('../utils.js');
 
-// Use the unified repository (carriers live under fulcrum/carriers/<store>.json)
-const { listCarriers } = require('../../../shared/libFileRepository.js');
+function normalizeBaseUrl(u = '') { return u && !u.endsWith('/') ? (u + '/') : u; }
+
+async function initFiles() {
+  if (FilesLib?.init) return FilesLib.init();
+  throw new Error('Unable to initialize aio-lib-files');
+}
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -9,75 +16,89 @@ const cors = {
   'Access-Control-Allow-Methods': 'GET, OPTIONS'
 };
 
-/**
- * Normalize a "store" input: string | string[] | undefined
- * - undefined  -> 'default'
- * - 'a,b,c'    -> ['a','b','c']
- * - ['a','b']  -> ['a','b']
- */
-function normalizeStoreParam(store) {
-  if (Array.isArray(store)) {
-    return store.map(String).map(s => s.trim()).filter(Boolean);
-  }
-  if (typeof store === 'string') {
-    const s = store.trim();
-    if (!s) return 'default';
-    // allow comma-separated list to address multi-store files
-    if (s.includes(',')) {
-      return s.split(',').map(x => x.trim()).filter(Boolean);
-    }
-    return s;
-  }
-  return 'default';
-}
-
 exports.main = async function main(params) {
   const logger = Core.Logger('get-carriers', { level: params.LOG_LEVEL || 'info' });
 
   try {
-    // CORS preflight
     if ((params.__ow_method || '').toUpperCase() === 'OPTIONS') {
       return { statusCode: 200, headers: cors, body: {} };
     }
 
-    // Read store selector from query (GET) or params
-    // Examples:
-    //   ?store=default
-    //   ?store=us,en
-    //   ?store=us&store=en (multiple)
-    const storeParam = params.store ?? params.query?.store;
-    const storeKey = normalizeStoreParam(storeParam);
+    const { COMMERCE_BASE_URL, OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET, OAUTH_SCOPES = 'commerce_api' } = params;
+    if (!COMMERCE_BASE_URL) return { statusCode: 500, headers: cors, body: { ok: false, error: 'Missing COMMERCE_BASE_URL' } };
+    const base = normalizeBaseUrl(COMMERCE_BASE_URL);
 
-    // Load carriers from repository: try the requested store first, then fallback to "default" if empty
-    let carriers = await listCarriers(storeKey);
-    if (!Array.isArray(carriers) || carriers.length === 0) {
-      if (String(storeKey) !== 'default') {
-        carriers = await listCarriers('default');
-      }
+    const token = await utils.getAccessToken(OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET, OAUTH_SCOPES);
+
+    const endpoint = `${base}V1/oope_shipping_carrier`;
+    const r = await fetch(endpoint, { headers: { Authorization: `Bearer ${token}` } });
+    const raw = await r.text();
+    let carriers = [];
+    try { carriers = JSON.parse(raw); } catch {}
+    if (!r.ok || !Array.isArray(carriers)) {
+      return { statusCode: r.status || 502, headers: cors, body: { ok: false, error: 'Failed to fetch carriers', raw } };
     }
-    carriers = Array.isArray(carriers) ? carriers : [];
 
-    // Shape output; keep "value" as a backward-compatible alias of "price"
-    const enriched = carriers.map(c => ({
-      id: c.id,
-      code: c.code,
-      title: c.title,
-      stores: Array.isArray(c.stores) ? c.stores : (c.stores ? [String(c.stores)] : []),
-      countries: Array.isArray(c.countries) ? c.countries : [],
-      sort_order: c.sort_order ?? null,
-      active: !!c.active, // some UIs expect "active" to toggle availability in Commerce UI
-      tracking_available: !!c.tracking_available,
-      shipping_labels_available: !!c.shipping_labels_available,
+    const files = await initFiles();
 
-      // Custom fields managed by the repo
-      method_name: c.method_name ?? null,
-      price: (typeof c.price === 'number') ? c.price : null,
-      // backward compatibility: legacy "value" mirrors price
-      value: (typeof c.price === 'number') ? c.price : (typeof c.value === 'number' ? c.value : null),
-      minimum: (typeof c.minimum === 'number') ? c.minimum : null,
-      maximum: (typeof c.maximum === 'number') ? c.maximum : null,
-      customer_groups: Array.isArray(c.customer_groups) ? c.customer_groups.map(String) : [],
-      price_per_item: !!c.price_per_item,
+    const enriched = await Promise.all(carriers.map(async (c) => {
+      const keyJson = `carrier_custom_${c.code}.json`;
+      const keyLegacy = `carrier_custom_${c.code}`;
+
+      let method_name = null, value = null, minimum = null, maximum = null, customer_groups = [], price_per_item = false, stores = null;
+
+      try {
+        let text = null;
+
+        try {
+          const buf = await files.read(keyJson);
+          if (buf) text = Buffer.isBuffer(buf) ? buf.toString('utf8') : String(buf);
+        } catch (e1) {
+          // ignore
+          try {
+            const buf2 = await files.read(keyLegacy);
+            if (buf2) text = Buffer.isBuffer(buf2) ? buf2.toString('utf8') : String(buf2);
+          } catch (e2) {
+            // ignore
+          }
+        }
+
+        if (text) {
+          const custom = JSON.parse(text);
+          if (custom && typeof custom === 'object') {
+            method_name = custom.method_name ?? null;
+            value       = (typeof custom.value === 'number')   ? custom.value   : null;
+            minimum     = (typeof custom.minimum === 'number') ? custom.minimum : null;
+            maximum     = (typeof custom.maximum === 'number') ? custom.maximum : null;
+
+            if (Array.isArray(custom.customer_groups)) {
+              customer_groups = custom.customer_groups.map((n) => Number(n)).filter((n) => Number.isInteger(n));
+            }
+            if (custom.price_per_item !== undefined) {
+              price_per_item = !!custom.price_per_item;
+            }
+            if (Array.isArray(custom.stores)) {
+              stores = custom.stores.map(String).filter(Boolean);
+            }
+          }
+        }
+      } catch (e) {
+        logger.warn(`Files read failed for carrier ${c.code}: ${e.message}`);
+      }
+
+      return {
+        id: c.id,
+        code: c.code,
+        title: c.title,
+        stores: stores ?? c.stores,
+        countries: c.countries,
+        sort_order: c.sort_order,
+        active: c.active,
+        tracking_available: c.tracking_available,
+        shipping_labels_available: c.shipping_labels_available,
+        method_name, value, minimum, maximum, customer_groups,
+        price_per_item
+      };
     }));
 
     return { statusCode: 200, headers: cors, body: { ok: true, carriers: enriched } };
