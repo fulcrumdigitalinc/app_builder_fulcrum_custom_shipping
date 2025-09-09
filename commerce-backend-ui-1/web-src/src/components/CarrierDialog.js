@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Dialog, Heading, Divider, Content, ButtonGroup, Button,
-  Form, TextField, NumberField, Picker, Item, Checkbox,
+  Form, TextField, NumberField, Item, Checkbox,
   Flex, Grid, View, Text, ListBox
 } from '@adobe/react-spectrum';
 
@@ -21,13 +21,16 @@ export function CarrierDialog({
   const getDefaultStore = () =>
     (allStores.find(s => s.id === 'default') ? 'default' : (allStores[0]?.id ?? 'default'));
 
+  // ---------- STATE ----------
   const [form, setForm] = useState(() => {
     const storesArr    = Array.isArray(initialData?.stores) ? initialData.stores : [];
     const countriesArr = Array.isArray(initialData?.countries) ? initialData.countries : [];
     return {
       code: (initialData?.code ?? '').toString(),
       title: (initialData?.title ?? '').toString(),
-      stores: (storesArr.length ? storesArr.map(String) : [initialData?.store ?? getDefaultStore()].filter(Boolean).map(String)),
+      stores: (storesArr.length
+        ? storesArr.map(String)
+        : [initialData?.store ?? getDefaultStore()].filter(Boolean).map(String)),
       countries: countriesArr.length ? countriesArr.map(String) : [],
       sort_order: (mode === 'edit' && Number.isInteger(initialData?.sort_order))
         ? String(initialData.sort_order)
@@ -46,11 +49,16 @@ export function CarrierDialog({
   });
 
   const [saving, setSaving] = useState(false);
-  const [error, setError]   = useState('');
+  const [inlineError, setInlineError] = useState('');
+  const [codeError, setCodeError] = useState('');
 
   const [groupsLoading, setGroupsLoading] = useState(true);
   const [groupOptions, setGroupOptions]   = useState([]);
+  const [storesLoading, setStoresLoading] = useState(true);
+  const [storeOptions, setStoreOptions]   = useState([]);
+  const [existingCodes, setExistingCodes] = useState([]);
 
+  // ---------- LOADERS ----------
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -63,16 +71,13 @@ export function CarrierDialog({
         setGroupOptions(items.map(g => ({ id: String(g.id), label: g.code || `Group ${g.id}` })));
       } catch (e) {
         if (!alive) return;
-        setError(`Error loading customer groups: ${e.message}`);
+        setInlineError(`Error loading customer groups: ${e.message}`);
       } finally {
         if (alive) setGroupsLoading(false);
       }
     })();
     return () => { alive = false; };
   }, []);
-
-  const [storesLoading, setStoresLoading] = useState(true);
-  const [storeOptions, setStoreOptions]   = useState([]);
 
   useEffect(() => {
     let alive = true;
@@ -98,20 +103,36 @@ export function CarrierDialog({
           .filter(Boolean);
 
         setStoreOptions(normalized);
+
+        if ((form.stores || []).length === 0 && normalized.length) {
+          const def = normalized.find(s => s.id === 'default')?.id ?? normalized[0].id;
+          setForm(prev => ({ ...prev, stores: [def] }));
+        }
       } catch (e) {
         if (!alive) return;
-        setError(prev => prev || `Error loading stores: ${e.message}`);
+        setInlineError(prev => prev || `Error loading stores: ${e.message}`);
       } finally {
         if (alive) setStoresLoading(false);
       }
     })();
     return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allStores]);
 
-  const allStoresResolved = useMemo(() => {
-    if (storeOptions.length) return storeOptions;
-    return (Array.isArray(allStores) ? allStores.map(s => ({ id: String(s.id), name: s.name ?? String(s.id) })) : []);
-  }, [storeOptions, allStores]);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const res = await fetch(GET_CARRIERS_URL);
+        const json = await res.json();
+        const items = Array.isArray(json?.carriers) ? json.carriers : [];
+        if (!alive) return;
+        const codes = items.map(c => String(c.code).trim()).filter(Boolean);
+        setExistingCodes(codes);
+      } catch { /* ignore */ }
+    })();
+    return () => { alive = false; };
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -141,31 +162,68 @@ export function CarrierDialog({
     return () => { alive = false; };
   }, [mode, initialData?.code]);
 
-  useEffect(() => {
-    if (mode === 'add' && !groupsLoading && groupOptions.length && (!form.customer_groups || form.customer_groups.length === 0)) {
-      setForm(prev => ({
-        ...prev,
-        customer_groups: groupOptions.slice(0, 2).map(o => o.id)
-      }));
-    }
-  }, [groupsLoading, groupOptions, mode]);
+  // ---------- HELPERS ----------
+  const onChange = (patch) => {
+    if (Object.prototype.hasOwnProperty.call(patch, 'code')) setCodeError('');
+    setInlineError('');
+    setForm(prev => ({ ...prev, ...patch }));
+  };
 
-  const onChange = (patch) => setForm(prev => ({ ...prev, ...patch }));
-
+  const codeTrimmed    = (form.code || '').trim();
   const groupsSelected = (form.customer_groups && form.customer_groups.length > 0);
+  const storesSelected = (form.stores && form.stores.length > 0);
   const validSortOrder = (form.sort_order === '' || /^\d+$/.test(form.sort_order));
+  const isDuplicateCode = useMemo(() => {
+    if (mode !== 'add') return false;
+    if (!codeTrimmed) return false;
+    return existingCodes.includes(codeTrimmed);
+  }, [mode, codeTrimmed, existingCodes]);
 
   const canSave = useMemo(() => {
-    if (!form.code?.trim() || !form.title?.trim()) return false;
+    if (!codeTrimmed || !form.title?.trim()) return false;
     if (!validSortOrder) return false;
     if (!groupsSelected) return false;
+    if (!storesSelected) return false;
+    if (isDuplicateCode) return false;
     return true;
-  }, [form, validSortOrder, groupsSelected]);
+  }, [codeTrimmed, form.title, validSortOrder, groupsSelected, storesSelected, isDuplicateCode]);
+
+  const extractBackendMessage = (json) => {
+    if (json?.message && typeof json.message === 'string') return json.message;
+    if (json?.data) {
+      try {
+        const inner = typeof json.data === 'string' ? JSON.parse(json.data) : json.data;
+        if (inner?.message && typeof inner.message === 'string') return inner.message;
+        if (typeof inner === 'string') return inner;
+        if (Array.isArray(inner) && inner.length) return String(inner[0]);
+      } catch { /* ignore */ }
+      if (typeof json.data === 'string') return json.data;
+    }
+    if (typeof json === 'string') return json;
+    return null;
+  };
+
+  // Auto-select first two groups ONCE (initial mount only)
+  const didAutoSelectGroups = useRef(false);
+  useEffect(() => {
+    if (didAutoSelectGroups.current) return;
+    if (mode !== 'add') return;
+    if (groupsLoading) return;
+    if (groupOptions.length === 0) return;
+    if ((form.customer_groups || []).length > 0) {
+      didAutoSelectGroups.current = true;
+      return;
+    }
+    const defaults = groupOptions.slice(0, 2).map(g => g.id);
+    if (defaults.length > 0) setForm(prev => ({ ...prev, customer_groups: defaults }));
+    didAutoSelectGroups.current = true;
+  }, [mode, groupsLoading, groupOptions]);
 
   const handleSave = async () => {
     try {
       setSaving(true);
-      setError('');
+      setInlineError('');
+      setCodeError('');
 
       const storesArr    = (form.stores || []).map(String).filter(Boolean);
       const countriesArr = (form.countries || []).map(String).filter(Boolean);
@@ -175,7 +233,7 @@ export function CarrierDialog({
 
       const native = {
         ...(initialData?.id ? { id: initialData.id } : {}),
-        code: String(form.code).trim(),
+        code: codeTrimmed,
         title: String(form.title).trim(),
         stores: storesArr,
         countries: countriesArr,
@@ -192,7 +250,7 @@ export function CarrierDialog({
         minimum: (typeof form.minimum === 'number') ? form.minimum : null,
         maximum: (typeof form.maximum === 'number') ? form.maximum : null,
         customer_groups: (form.customer_groups || []).map(v => Number(v)).filter(n => Number.isInteger(n)),
-        ...(typeof form.price_per_item === 'boolean' ? { price_per_item: form.price_per_item } : {})
+        ...(typeof form.price_per_item === 'boolean') ? { price_per_item: form.price_per_item } : {}
       };
 
       const payload = { ...native, variables };
@@ -202,96 +260,166 @@ export function CarrierDialog({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ carrier: payload })
       });
+
       const json = await res.json();
-      if (!res.ok) throw new Error(json?.message || 'Failed to save carrier');
+
+      // Backend now always returns 200; also check logical ok flag
+      if (!res.ok || json?.ok === false) {
+        const msg = extractBackendMessage(json) || 'Unexpected error while saving carrier';
+        setInlineError(msg);
+        if (String(msg).toLowerCase().includes('already exists')) setCodeError(msg);
+        return;
+      }
+
+      setExistingCodes(prev => Array.from(new Set([...prev, codeTrimmed])));
 
       onSuccess && onSuccess(json);
       onClose && onClose();
     } catch (e) {
-      setError(e.message);
+      setInlineError(e.message);
     } finally {
       setSaving(false);
     }
   };
 
+  // ---- Uniform field wrapper with Spectrum label classes ----
+  const FieldBlock = ({ id, label, children }) => (
+    <View UNSAFE_className="spectrum-Field" UNSAFE_style={{ width: '100%' }}>
+      <Text
+        id={id}
+        elementType="label"
+        UNSAFE_className="spectrum-FieldLabel spectrum-FieldLabel--sizeM"
+        UNSAFE_style={{ display: 'block', marginBottom: 4 }}
+      >
+        {label}
+      </Text>
+      <div className="spectrum-FieldField">{children}</div>
+    </View>
+  );
+
+  // Always-defined list of stores
+  const storesList = useMemo(() => {
+    if (storeOptions && storeOptions.length) return storeOptions;
+    if (Array.isArray(allStores)) {
+      return allStores.map(s => ({ id: String(s.id), name: s.name ?? String(s.id) }));
+    }
+    return [];
+  }, [storeOptions, allStores]);
+
   return (
     <Dialog>
-      <Heading>{mode === 'edit' ? 'Edit Carrier' : 'Add Carrier'}</Heading>
+      <Heading>Add Carrier</Heading>
       <Divider />
       <Content>
         <Form maxWidth="100%">
+          {/* Row 1: Code + Title */}
           <Grid columns={['1fr', '1fr']} gap="size-200" alignItems="end">
-            <TextField
-              label="Code *"
-              value={form.code}
-              onChange={(v) => onChange({ code: v })}
-              isDisabled={mode === 'edit'}
-            />
-            <TextField
-              label="Title *"
-              value={form.title}
-              onChange={(v) => onChange({ title: v })}
-            />
+            <FieldBlock id="code-label" label="Code *">
+              <TextField
+                aria-labelledby="code-label"
+                value={form.code}
+                onChange={(v) => onChange({ code: v })}
+                isDisabled={mode === 'edit'}
+                validationState={(codeError || isDuplicateCode) ? 'invalid' : undefined}
+                errorMessage={codeError || (isDuplicateCode ? 'Code already exists. Choose a different code.' : undefined)}
+                width="100%"
+              />
+            </FieldBlock>
 
-            <TextField
-              label="Method Name"
-              value={form.method_name || ''}
-              onChange={(v) => onChange({ method_name: v })}
-            />
+            <FieldBlock id="title-label" label="Title *">
+              <TextField
+                aria-labelledby="title-label"
+                value={form.title}
+                onChange={(v) => onChange({ title: v })}
+                width="100%"
+              />
+            </FieldBlock>
+          </Grid>
 
-            <View>
-              <Text UNSAFE_style={{ fontWeight: 600 }}>Stores</Text>
+          {/* Row 2: Method Name + Stores (align tops) */}
+          <Grid columns={['1fr', '1fr']} gap="size-200" alignItems="start" marginTop="size-200">
+            <FieldBlock id="method-label" label="Method Name">
+              <TextField
+                aria-labelledby="method-label"
+                value={form.method_name || ''}
+                onChange={(v) => onChange({ method_name: v })}
+                width="100%"
+              />
+            </FieldBlock>
+
+            <FieldBlock id="stores-label" label="Stores *">
               <ListBox
-                aria-label="Stores"
+                aria-labelledby="stores-label"
                 selectionMode="multiple"
                 selectedKeys={new Set(form.stores || [])}
                 onSelectionChange={(keys) => {
-                  const arr = Array.from(keys || []).map(String);
+                  const allIds = storesList.map(s => String(s.id));
+                  const arr = keys === 'all' ? allIds : Array.from(keys || []).map(String);
                   onChange({ stores: arr });
                 }}
                 width="100%"
                 UNSAFE_style={{ maxHeight: 160, overflow: 'auto', border: '1px solid var(--spectrum-alias-border-color)' }}
               >
-                {allStoresResolved.map(s => (
+                {storesList.map(s => (
                   <Item key={String(s.id)}>{s.name ?? s.id}</Item>
                 ))}
               </ListBox>
-              {storesLoading && <View marginTop="size-100">Loading stores…</View>}
-            </View>
+            </FieldBlock>
           </Grid>
 
-          <Flex gap="size-300" marginTop="size-200" alignItems="center" wrap>
-            <NumberField
-              label="Price"
-              hideStepper
-              value={form.value}
-              onChange={(v) => onChange({ value: Number.isFinite(v) ? v : null })}
-              width="size-1000"
-            />
-            <NumberField
-              label="Minimum"
-              hideStepper
-              value={form.minimum}
-              onChange={(v) => onChange({ minimum: Number.isFinite(v) ? v : null })}
-              width="size-1000"
-            />
-            <NumberField
-              label="Maximum"
-              hideStepper
-              value={form.maximum}
-              onChange={(v) => onChange({ maximum: Number.isFinite(v) ? v : null })}
-              width="size-1000"
-            />
-            <TextField
-              label="Sort order"
-              inputMode="numeric"
-              value={form.sort_order}
-              onChange={(v) => {
-                const raw = String(v);
-                if (/^\d*$/.test(raw)) onChange({ sort_order: raw });
-              }}
-              width="size-1000"
-            />
+          {/* Row 3: Price / Minimum / Maximum / Sort order */}
+          <Flex gap="size-300" marginTop="size-200" alignItems="end" wrap>
+            <View width="size-1000">
+              <FieldBlock id="price-label" label="Price">
+                <NumberField
+                  aria-labelledby="price-label"
+                  hideStepper
+                  value={form.value}
+                  onChange={(v) => onChange({ value: Number.isFinite(v) ? v : null })}
+                  width="100%"
+                />
+              </FieldBlock>
+            </View>
+
+            <View width="size-1000">
+              <FieldBlock id="min-label" label="Minimum">
+                <NumberField
+                  aria-labelledby="min-label"
+                  hideStepper
+                  value={form.minimum}
+                  onChange={(v) => onChange({ minimum: Number.isFinite(v) ? v : null })}
+                  width="100%"
+                />
+              </FieldBlock>
+            </View>
+
+            <View width="size-1000">
+              <FieldBlock id="max-label" label="Maximum">
+                <NumberField
+                  aria-labelledby="max-label"
+                  hideStepper
+                  value={form.maximum}
+                  onChange={(v) => onChange({ maximum: Number.isFinite(v) ? v : null })}
+                  width="100%"
+                />
+              </FieldBlock>
+            </View>
+
+            <View width="size-1000">
+              <FieldBlock id="sort-label" label="Sort order">
+                <TextField
+                  aria-labelledby="sort-label"
+                  inputMode="numeric"
+                  value={form.sort_order}
+                  onChange={(v) => {
+                    const raw = String(v);
+                    if (/^\d*$/.test(raw)) onChange({ sort_order: raw });
+                  }}
+                  width="100%"
+                />
+              </FieldBlock>
+            </View>
+
             <Checkbox
               isSelected={form.price_per_item}
               onChange={(v) => onChange({ price_per_item: v })}
@@ -300,56 +428,40 @@ export function CarrierDialog({
             </Checkbox>
           </Flex>
 
-          <Flex gap="size-300" marginTop="size-200" alignItems="center">
-            <Checkbox
-              isSelected={form.active}
-              onChange={(v) => onChange({ active: v })}
-            >
-              Active
-            </Checkbox>
-            <Checkbox
-              isSelected={form.tracking_available}
-              onChange={(v) => onChange({ tracking_available: v })}
-            >
-              Tracking available
-            </Checkbox>
-            <Checkbox
-              isSelected={form.shipping_labels_available}
-              onChange={(v) => onChange({ shipping_labels_available: v })}
-            >
-              Shipping labels available
-            </Checkbox>
-          </Flex>
+          {/* Row 4: Customer Groups (full width) */}
+          <Grid columns={['1fr', '1fr']} gap="size-200" marginTop="size-300">
+            <View UNSAFE_style={{ gridColumn: '1 / -1' }}>
+              <FieldBlock id="groups-label" label="Customer Groups *">
+                <ListBox
+                  aria-labelledby="groups-label"
+                  selectionMode="multiple"
+                  selectedKeys={new Set(form.customer_groups)}
+                  onSelectionChange={(keys) => {
+                    const allIds = groupOptions.map(g => g.id);
+                    const arr = keys === 'all' ? allIds : Array.from(keys || []).map(String);
+                    onChange({ customer_groups: arr });
+                  }}
+                  width="100%"
+                  UNSAFE_style={{ maxHeight: 220, overflow: 'auto', border: '1px solid var(--spectrum-alias-border-color)' }}
+                >
+                  {groupOptions.map(opt => (
+                    <Item key={opt.id}>{opt.label}</Item>
+                  ))}
+                </ListBox>
+              </FieldBlock>
 
-          {/* Customer Groups */}
-          <View marginTop="size-300">
-            <Text UNSAFE_style={{ fontWeight: 600 }}>Customer Groups</Text>
-            <ListBox
-              aria-label="Customer groups"
-              selectionMode="multiple"
-              selectedKeys={new Set(form.customer_groups)}
-              onSelectionChange={(keys) => {
-                const arr = Array.from(keys || []).map(String);
-                onChange({ customer_groups: arr });
-              }}
-              width="size-6000"
-              UNSAFE_style={{ maxHeight: 220, overflow: 'auto', border: '1px solid var(--spectrum-alias-border-color)' }}
-            >
-              {groupOptions.map(opt => (
-                <Item key={opt.id}>{opt.label}</Item>
-              ))}
-            </ListBox>
-            {!groupsSelected && (
-              <View marginTop="size-100" UNSAFE_style={{ color: 'crimson' }}>
-                Select at least one customer group.
-              </View>
-            )}
-            {groupsLoading && <View marginTop="size-100">Loading groups…</View>}
-          </View>
+              {(!form.customer_groups || form.customer_groups.length === 0) && (
+                <View marginTop="size-100" UNSAFE_style={{ color: 'crimson' }}>
+                  Select at least one customer group.
+                </View>
+              )}
+              {groupsLoading && <View marginTop="size-100">Loading groups…</View>}
+            </View>
+          </Grid>
 
-          {error && (
+          {inlineError && (
             <View marginTop="size-200" UNSAFE_style={{ color: 'crimson' }}>
-              {error}
+              {inlineError}
             </View>
           )}
         </Form>
