@@ -1,3 +1,8 @@
+/*
+Copyright 2025
+Licensed under the Apache License, Version 2.0
+*/
+
 const { Core } = require('@adobe/aio-sdk');
 const fetch = require('node-fetch');
 const FilesLib = require('@adobe/aio-lib-files');
@@ -22,7 +27,7 @@ function toBool(v) {
   if (typeof v === 'number') return v !== 0;
   if (typeof v === 'string') {
     const s = v.trim().toLowerCase();
-    if (['true','1','yes','on'].includes(s)) return true;
+    if (['true','1','yes','on','si','sí'].includes(s)) return true;
     if (['false','0','no','off'].includes(s)) return false;
   }
   return !!v;
@@ -32,14 +37,15 @@ const toStrOrNull  = (v) => (v === '' || v === null || v === undefined) ? null :
 const toStrArray   = (arr) => Array.from(new Set((arr || []).map(String))).filter(Boolean);
 const toIntArray   = (arr) => (Array.isArray(arr) ? arr.map(n => Number(n)).filter(Number.isInteger) : []);
 
+// Custom fields persisted in Files
 const CUSTOM_SCHEMA = {
-  method_name: 'string',      // -> null
-  value: 'number',            // -> null
-  minimum: 'number',          // -> null
-  maximum: 'number',          // -> null
-  customer_groups: 'intArray',// -> []
-  price_per_item: 'boolean',  // -> null
-  stores: 'strArray'          // -> []
+  method_name: 'string',
+  value: 'number',
+  minimum: 'number',
+  maximum: 'number',
+  customer_groups: 'intArray',
+  price_per_item: 'boolean',
+  stores: 'strArray'
 };
 
 function clearValueFor(type) { return (type === 'intArray' || type === 'strArray') ? [] : null; }
@@ -55,12 +61,11 @@ function normalizeCustomValue(type, value) {
   }
 }
 
+// Build Commerce-native payload from UI input
 function buildNativePayload(input) {
   const out = { code: String(input.code).trim() };
 
-  if (input.title !== undefined) {
-    out.title = String(input.title);
-  }
+  if (input.title !== undefined) out.title = String(input.title);
 
   if (input.stores !== undefined) out.stores = toStrArray(input.stores);
   if (input.countries !== undefined) out.countries = toStrArray(input.countries);
@@ -75,6 +80,7 @@ function buildNativePayload(input) {
   return out;
 }
 
+// Read by code
 async function getCarrierByCode(base, token, code) {
   const res = await fetch(`${base}V1/oope_shipping_carrier/${encodeURIComponent(code)}`, {
     method: 'GET',
@@ -86,20 +92,75 @@ async function getCarrierByCode(base, token, code) {
   return { exists: true, body: text };
 }
 
-async function upsertCarrier(base, token, nativePayload) {
-  const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
-  const method = (await getCarrierByCode(base, token, nativePayload.code)).exists ? 'PUT' : 'POST';
-  const url = `${base}V1/oope_shipping_carrier`;
-
-  const resp = await fetch(url, { method, headers, body: JSON.stringify({ carrier: nativePayload }) });
+// Create
+async function createCarrier(base, token, nativePayload) {
+  const resp = await fetch(`${base}V1/oope_shipping_carrier`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ carrier: nativePayload }),
+  });
   const text = await resp.text();
-  return { ok: resp.ok, status: resp.status, text, method };
+  return { ok: resp.ok, status: resp.status, text, method: 'POST' };
+}
+
+// Update (best effort PUT; some installs ignore it)
+async function putCarrier(base, token, nativePayload) {
+  const resp = await fetch(`${base}V1/oope_shipping_carrier/${encodeURIComponent(nativePayload.code)}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ carrier: nativePayload }),
+  });
+  const text = await resp.text();
+  return { ok: resp.ok, status: resp.status, text, method: 'PUT' };
+}
+
+// Hard replace: DELETE then POST (guaranteed update)
+async function replaceCarrier(base, token, code, nativePayload) {
+  // DELETE (ignore failure)
+  try {
+    await fetch(`${base}V1/oope_shipping_carrier/${encodeURIComponent(code)}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  } catch { /* ignore */ }
+  // POST
+  return createCarrier(base, token, nativePayload);
+}
+
+// Upsert strategy:
+//   - If not exists -> POST
+//   - If exists -> HARD REPLACE (DELETE + POST)
+//   - If POST fails on replace, fall back to PUT and surface its result
+async function upsertCarrier(base, token, nativePayload) {
+  const exists = await getCarrierByCode(base, token, nativePayload.code);
+
+  if (exists.exists === false) {
+    return createCarrier(base, token, nativePayload);
+  }
+  if (exists.exists === true) {
+    // Force replace to avoid "200 but no change" behavior
+    const rep = await replaceCarrier(base, token, nativePayload.code, nativePayload);
+    if (rep.ok) return { ...rep, method: 'REPLACED' };
+
+    // Fallback: try PUT if replace failed
+    const put = await putCarrier(base, token, nativePayload);
+    return put.ok ? put : rep;
+  }
+
+  // GET failed, unknown state
+  return {
+    ok: false,
+    status: exists.status || 500,
+    method: 'GET',
+    text: exists.body || 'Unable to determine existence (GET failed)'
+  };
 }
 
 exports.main = async function main(params) {
   const logger = Core.Logger('add-carrier', { level: params.LOG_LEVEL || 'info' });
 
   try {
+    // CORS preflight
     if ((params.__ow_method || '').toUpperCase() === 'OPTIONS') {
       return { statusCode: 200, headers: cors, body: {} };
     }
@@ -110,6 +171,7 @@ exports.main = async function main(params) {
     }
     const base = normalizeBaseUrl(COMMERCE_BASE_URL);
 
+    // Parse incoming payload
     let carrier = params.carrier;
     if (carrier && typeof carrier === 'string') { try { carrier = JSON.parse(carrier); } catch {} }
     if (!carrier) {
@@ -124,23 +186,34 @@ exports.main = async function main(params) {
       return { statusCode: 400, headers: cors, body: { ok: false, message: 'Missing carrier payload' } };
     }
 
+    // REST requires title
     const hasTitle = carrier.title !== undefined && String(carrier.title).trim() !== '';
     if (!hasTitle) {
       return { statusCode: 400, headers: cors, body: { ok: false, message: 'Title is required by the REST API (POST/PUT)' } };
     }
 
-    const token = await utils.getAccessToken(OAUTH_CLIENT_ID,OAUTH_CLIENT_SECRET,OAUTH_SCOPES);
+    // OAuth
+    const token = await utils.getAccessToken(OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET, OAUTH_SCOPES);
 
+    // Build payload and upsert
     const nativePayload = buildNativePayload(carrier);
     const up = await upsertCarrier(base, token, nativePayload);
 
+    // Always return HTTP 200; use ok flag for logical status
     if (!up.ok) {
+      let magentoMsg = '';
+      try {
+        const parsed = JSON.parse(up.text || '{}');
+        magentoMsg = parsed?.message || parsed?.parameters || '';
+      } catch {
+        magentoMsg = up.text || '';
+      }
       return {
-        statusCode: up.status || 500,
+        statusCode: 200,
         headers: cors,
         body: {
           ok: false,
-          message: 'Commerce API error',
+          message: magentoMsg || 'Commerce API error',
           status: up.status,
           method: up.method,
           requestCarrier: nativePayload,
@@ -149,6 +222,7 @@ exports.main = async function main(params) {
       };
     }
 
+    // Merge custom fields into Files
     const vars = (carrier && typeof carrier.variables === 'object' && carrier.variables) || {};
     const hasVariablesObject = Object.prototype.hasOwnProperty.call(carrier, 'variables');
 
@@ -167,26 +241,18 @@ exports.main = async function main(params) {
 
     let current = {};
     try {
-      const buf = await files.read(fileKey); 
+      const buf = await files.read(fileKey);
       if (buf) {
         const text = Buffer.isBuffer(buf) ? buf.toString('utf8') : String(buf);
         if (text) current = JSON.parse(text);
       }
-    } catch (e) {
-      // read error
-    }
+    } catch {}
 
     const merged = { ...current, ...incomingCustom };
 
     try {
-      await files.write(
-        fileKey,
-        Buffer.from(JSON.stringify(merged)),
-        { contentType: 'application/json' }
-      );
-    } catch (e) {
-      // write error
-    }
+      await files.write(fileKey, Buffer.from(JSON.stringify(merged)), { contentType: 'application/json' });
+    } catch {}
 
     let persisted = {};
     try {
@@ -195,15 +261,14 @@ exports.main = async function main(params) {
         const text2 = Buffer.isBuffer(buf2) ? buf2.toString('utf8') : String(buf2);
         if (text2) persisted = JSON.parse(text2);
       }
-    } catch (e) {
-      // ignore
-    }
+    } catch {}
 
     return {
       statusCode: 200,
       headers: cors,
       body: {
         ok: true,
+        method: up.method,
         carrier: nativePayload,
         commerce: up.text,
         receivedCustom: incomingCustom,

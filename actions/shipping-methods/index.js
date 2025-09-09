@@ -33,6 +33,14 @@ function isActiveFromRest(v) {
   return ['true','1','yes','y','si','sí','on'].includes(s);
 }
 
+// Ultra-tolerant boolean (checkboxes/toggles)
+function isTruthy(v) {
+  if (v === true) return true;
+  if (typeof v === 'number') return v > 0;
+  const s = String(v ?? '').trim().toLowerCase();
+  return ['true','1','yes','y','si','sí','on','checked','enable','enabled'].includes(s);
+}
+
 // Numbers for generic fields (e.g., price). 0 is valid here.
 function pickNumber(...vals) {
   for (const v of vals) {
@@ -95,13 +103,10 @@ function canonStoreToken(x) {
   return s;
 }
 
-// Store filter (STRICT from Files JSON):
-// - If no store view is selected in JSON (empty/missing), DO NOT show.
-// - Otherwise, case-insensitive match; accept "*" / "all"; allow "1" <-> "default" equivalence.
-// - If we cannot resolve request store, we do not block (keep behavior).
+// Store filter (STRICT from Files JSON): empty list => DO NOT show
 function storesMatch(request, storesFromJson) {
   const allow = toArray(storesFromJson).map(canonStoreToken).filter(Boolean);
-  if (!allow.length) return false; // ← strict: empty JSON list hides the carrier
+  if (!allow.length) return false; // strict: empty JSON list hides the carrier
   const reqStore = extractStore(request);
   if (reqStore == null) return true; // don't block if request store unknown
   const r = canonStoreToken(reqStore);
@@ -137,21 +142,77 @@ function extractCartTotal(req = {}) {
     const n = Number(v);
     if (Number.isFinite(n) && n >= 0) return n;
   }
-  // Fallback: sum items
-  try {
-    const items = req?.items || req?.quote?.items || [];
-    let sum = 0;
-    for (const it of items) {
-      const qty = Number(it?.qty ?? it?.qty_ordered ?? it?.quantity ?? 1) || 1;
-      const row =
-        pickNumber(it?.base_row_total_incl_tax, it?.row_total_incl_tax,
-                   it?.base_row_total, it?.row_total) ??
-        (Number(it?.base_price ?? it?.price) * qty);
-      if (Number.isFinite(row)) sum += row;
+  // Fallback: sum items like in the legacy logic
+  const itemArrays = [
+    req?.items,
+    req?.cart?.items,
+    req?.quote?.items,
+    req?.cartItems,
+    req?.package_items
+  ].filter(Array.isArray);
+  let sum = 0;
+  for (const arr of itemArrays) {
+    for (const it of arr) {
+      const qty = Number(it?.qty ?? it?.qty_ordered ?? it?.quantity ?? it?.qty_to_ship ?? it?.qtyOrdered) || 1;
+      const rowCandidates = [
+        it?.row_total_with_discount, it?.base_row_total_with_discount,
+        it?.row_total_incl_tax,      it?.base_row_total_incl_tax,
+        it?.row_total,               it?.base_row_total
+      ];
+      let row = rowCandidates.map(Number).find(n => Number.isFinite(n) && n >= 0);
+      if (!Number.isFinite(row)) {
+        const price = Number(it?.price_incl_tax ?? it?.base_price_incl_tax ?? it?.price ?? it?.base_price);
+        row = (Number.isFinite(price) && price >= 0) ? price * qty : 0;
+      }
+      if (row > 0) sum += row;
     }
-    if (sum > 0) return sum;
-  } catch {}
-  return 0;
+    if (sum > 0) break;
+  }
+  return sum > 0 ? sum : 0;
+}
+
+// --------- EXACT legacy item-count logic (for price_per_item) ----------
+function extractCartItemCount(req = {}) {
+  // quick shortcuts
+  const quick = [ req?.totals?.items_qty, req?.items_qty ];
+  for (const q of quick) {
+    const n = Number(q);
+    if (Number.isFinite(n) && n >= 0) return n;
+  }
+  // common arrays
+  const candidates = [
+    req?.items,
+    req?.cart?.items,
+    req?.quote?.items,
+    req?.cartItems,
+    req?.package_items
+  ];
+  for (const arr of candidates) {
+    if (Array.isArray(arr) && arr.length) {
+      let sum = 0;
+      for (const it of arr) {
+        const q = Number(it?.qty ?? it?.qty_ordered ?? it?.quantity ?? it?.qty_to_ship ?? it?.qtyOrdered);
+        if (Number.isFinite(q) && q > 0) sum += q; else sum += 1;
+      }
+      return sum;
+    }
+  }
+  // deep scan fallback
+  let total = 0;
+  (function walk(o) {
+    if (!o || typeof o !== 'object') return;
+    for (const [k, v] of Object.entries(o)) {
+      if (Array.isArray(v) && k.toLowerCase().includes('items')) {
+        for (const it of v) {
+          const q = Number(it?.qty ?? it?.qty_ordered ?? it?.quantity ?? it?.qty_to_ship ?? it?.qtyOrdered);
+          if (Number.isFinite(q) && q > 0) total += q; else total += 1;
+        }
+      } else if (v && typeof v === 'object') {
+        walk(v);
+      }
+    }
+  })(req);
+  return total || 1; // at least 1
 }
 
 // ---------- Files (read carrier customization JSON) ----------
@@ -215,7 +276,8 @@ async function main(params) {
     const payload = JSON.parse(b64decode(params.__ow_body || 'e30='));
     const request = payload?.rateRequest || {};
     const cartTotal = extractCartTotal(request);
-    logger.info(`cartTotal inferred = ${cartTotal}`);
+    const cartItemCount = extractCartItemCount(request);
+    logger.info(`cartTotal = ${cartTotal}; cartItemCount = ${cartItemCount}`);
 
     // Config
     const DEFAULT_PRICE = Number(params.DEFAULT_PRICE ?? 0) || 0; // default price = 0
@@ -258,7 +320,7 @@ async function main(params) {
       const fallbackTitle = String(c.method_name ?? c.title ?? 'Shipping Method');
       const codeKey       = String(c.code ?? slugify(fallbackTitle, 'custom'));
 
-      // Read customization JSON (method_name, price/value, carrier_title, min/max, stores, customer_groups)
+      // Read customization JSON (method_name, price/value, carrier_title, min/max, stores, customer_groups, price_per_item)
       let custom = {};
       if (files) {
         try { custom = await readCustomFromFiles(files, codeKey, logger); }
@@ -283,9 +345,16 @@ async function main(params) {
       const methodCode   = slugify(custom.method_name ?? c.method_name ?? c.code ?? methodTitle, `${(c.code || 'custom')}_shipping`);
       const carrierTitle = String(custom.carrier_title ?? c.title ?? 'Fulcrum Custom Shipping');
 
-      // Price: JSON price/value → fallback to DEFAULT_PRICE (0)
-      const priceFromJson = pickNumber(custom.price, custom.value);
-      const finalPrice    = (priceFromJson !== null) ? priceFromJson : DEFAULT_PRICE;
+      // Price base (unit)
+      const unitPrice = (pickNumber(custom.price, custom.value) !== null)
+        ? pickNumber(custom.price, custom.value)
+        : DEFAULT_PRICE;
+
+      // Legacy-proven price_per_item behavior (snake o camel)
+      const ppiRaw = (custom.price_per_item !== undefined) ? custom.price_per_item : custom.pricePerItem;
+      const pricePerItem = isTruthy(ppiRaw);
+
+      const finalPrice = pricePerItem ? (unitPrice * (cartItemCount || 0)) : unitPrice;
 
       ops.push(addOp({
         carrier_code:  c.code || 'CUSTOM',
@@ -299,10 +368,13 @@ async function main(params) {
           { key: 'source', value: files ? 'REST + Files (min/max + stores + groups)' : 'REST (min/max + stores + groups)' },
           { key: 'code_key', value: codeKey },
           { key: 'cart_total', value: String(cartTotal) },
+          { key: 'cart_item_count', value: String(cartItemCount) },
           { key: 'min', value: min === null ? 'none' : String(min) },
           { key: 'max', value: max === null ? 'none' : String(max) },
           { key: 'req_store', value: String(extractStore(request) ?? 'unknown') },
-          { key: 'cfg_stores', value: JSON.stringify(toArray(custom.stores)) }
+          { key: 'cfg_stores', value: JSON.stringify(toArray(custom.stores)) },
+          { key: 'price_per_item', value: String(!!pricePerItem) },
+          { key: 'unit_price', value: String(unitPrice) }
         ]
       }));
     }
