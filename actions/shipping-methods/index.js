@@ -264,6 +264,16 @@ async function getAccessToken(clientId, clientSecret, scopes = 'commerce_api') {
   return json.access_token;
 }
 
+// ---------- NEW: string picker to avoid empty/undefined method titles ----------
+function pickString(...vals) {
+  for (const v of vals) {
+    if (v === null || v === undefined) continue;
+    const s = String(v).trim();
+    if (s) return s;
+  }
+  return null;
+}
+
 // ---------- Main action ----------
 async function main(params) {
   const logger = Core.Logger('shipping-methods', { level: params.LOG_LEVEL || 'info' });
@@ -340,10 +350,36 @@ async function main(params) {
       // CUSTOMER GROUPS (from JSON)
       if (!groupsMatch(request, custom.customer_groups)) continue;
 
-      // Titles
-      const methodTitle  = String(custom.method_name ?? c.method_name ?? c.title ?? 'Shipping Method');
-      const methodCode   = slugify(custom.method_name ?? c.method_name ?? c.code ?? methodTitle, `${(c.code || 'custom')}_shipping`);
-      const carrierTitle = String(custom.carrier_title ?? c.title ?? 'Fulcrum Custom Shipping');
+      // --------- CHANGED BLOCK: Titles / Codes only ----------
+      const methodTitle  = pickString(
+        custom.method_name,
+        custom.method_title,
+        custom.name,
+        c.method_name,
+        c.method_title,
+        c.methodName,
+        c.title,
+        'Shipping Method'
+      );
+
+      const methodCode   = slugify(
+        pickString(
+          custom.code,
+          c.code,
+          custom.method_name,
+          c.method_name,
+          methodTitle
+        ),
+        `${(c.code || 'custom')}_shipping`
+      );
+
+      const carrierTitle = pickString(
+        custom.carrier_title,
+        c.carrier_title,
+        c.title,
+        'Fulcrum Custom Shipping'
+      );
+      // --------- END CHANGED BLOCK ----------
 
       // Price base (unit)
       const unitPrice = (pickNumber(custom.price, custom.value) !== null)
