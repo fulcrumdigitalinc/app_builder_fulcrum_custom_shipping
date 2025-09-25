@@ -132,19 +132,65 @@ function errorResponse(statusCode, message, logger) {
   };
 }
 
-async function getAccessToken($clientId,$clientSecret,$scope) {
-    const url = 'https://ims-na1.adobelogin.com/ims/token/v3';
-    const body = new URLSearchParams({
-      grant_type: 'client_credentials',
-      client_id: $clientId,
-      client_secret: $clientSecret,
-      scope: $scope
-    });
-    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
-    const j = await r.json();
-    if (!r.ok || j.error) throw new Error(`Failed to get access token → ${JSON.stringify(j)}`);
-    return j.access_token;
+/**
+ * Returns an access token depending on environment:
+ * - PaaS (COMMERCE_BASE_URL contains "/rest/"): returns MAGENTO_INTEGRATION_BEARER_TOKEN from env
+ * - SaaS: requests IMS token via client_credentials
+ *
+ * If parameters are omitted, falls back to env:
+ *  OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET, OAUTH_SCOPES
+ *
+ * @param {string} [$clientId]
+ * @param {string} [$clientSecret]
+ * @param {string} [$scope]
+ * @returns {Promise<string>}
+ */
+async function getAccessToken($clientId, $clientSecret, $scope) {
+  const baseUrl = (process.env.COMMERCE_BASE_URL || '').toLowerCase();
+  const isPaas = baseUrl.includes('/rest/');
+
+  if (isPaas) {
+    // ===== PaaS: use pre-generated admin/integration bearer token =====
+    const bearer = (process.env.MAGENTO_INTEGRATION_BEARER_TOKEN || '').trim();
+    if (!bearer) {
+      throw new Error(
+        'Missing MAGENTO_INTEGRRATION_BEARER_TOKEN in env for PaaS. ' +
+        'Generate an admin token (e.g., /V1/integration/admin/token) ' +
+        'and set MAGENTO_INTEGRATION_BEARER_TOKEN.'
+      );
+    }
+    return bearer;
   }
+
+  // ===== SaaS: IMS client_credentials =====
+  const clientId = $clientId || process.env.OAUTH_CLIENT_ID;
+  const clientSecret = $clientSecret || process.env.OAUTH_CLIENT_SECRET;
+  const scope = $scope || process.env.OAUTH_SCOPES || 'adobeio_api';
+
+  if (!clientId || !clientSecret) {
+    throw new Error('Missing IMS credentials for SaaS (OAUTH_CLIENT_ID / OAUTH_CLIENT_SECRET).');
+  }
+
+  const url = 'https://ims-na1.adobelogin.com/ims/token/v3';
+  const body = new URLSearchParams({
+    grant_type: 'client_credentials',
+    client_id: clientId,
+    client_secret: clientSecret,
+    scope
+  });
+
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body
+  });
+
+  const j = await r.json();
+  if (!r.ok || j.error) {
+    throw new Error(`Failed to get access token → ${JSON.stringify(j)}`);
+  }
+  return j.access_token;
+}
 
 module.exports = {
   errorResponse,
