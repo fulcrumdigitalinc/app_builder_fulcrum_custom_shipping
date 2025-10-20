@@ -18,7 +18,6 @@ For more details on the extensibility framework, see the [Adobe Commerce Checkou
 - [Architecture](#architecture)
 - [Carrier Grid Configuration](#carrier-grid-configuration)
 - [Webhooks](#webhooks)
-- [Eventing](#eventing)
 - [Deploy](#deploy)
 - [Actions](#actions)
   - [`add-carrier`](#add-carrier)
