@@ -5,8 +5,8 @@ Welcome to **Fulcrum Custom Shipping** (`fulcrum_custom_shipping`), a custom **O
 This project implements a **carrier grid** powered by **Adobe App Builder** and **Commerce Webhooks**, without installing modules in the Magento backend. It provides a configurable shipping method managed through the **Admin UI** and consumed by the **Checkout Starter Kit** or a custom Storefront.
 
 For more details on the extensibility framework, see the [Adobe Commerce Checkout Starter Kit docs](https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/).
-You can download the <a target="_blank" href="https://docs.google.com/document/d/1rrvvXR9E-XeHFnKwxMwG-y_zwaCshOMrmH4D9_HcqRg/edit?usp=sharing">USER GUIDE</a>
-Or the <a target="_blank" href="https://docs.google.com/document/d/1auF_ueMR5jAqGKTSOknEOorKmBvLELc3Pk2f__5a_XU/edit?usp=sharing">DETAILED DESCRIPTION GUIDE</a>
+You can download the <a href="https://docs.google.com/document/d/1rrvvXR9E-XeHFnKwxMwG-y_zwaCshOMrmH4D9_HcqRg/edit?usp=sharing" target="_blank">USER GUIDE</a>
+Or the <a href="https://docs.google.com/document/d/1auF_ueMR5jAqGKTSOknEOorKmBvLELc3Pk2f__5a_XU/edit?usp=sharing" target="_blank">DETAILED DESCRIPTION GUIDE</a>
 
 ---
 
