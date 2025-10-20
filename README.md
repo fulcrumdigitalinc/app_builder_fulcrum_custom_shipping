@@ -73,21 +73,9 @@ XXXXXXXXXXXXXXXXXXXXXXXX
 ```
 
 ### Create Webhooks
-After deploying actions, create the required webhooks:
-- `collect-taxes` → `plugin.magento.out_of_process_tax_management.api.oop_tax_collection.collect_taxes`
-
----
-
-## Eventing
-Configure event provider:
-```bash
-npm run configure-events
-```
-Update `.env` with:
-```env
-COMMERCE_ADOBE_IO_EVENTS_MERCHANT_ID=
-COMMERCE_ADOBE_IO_EVENTS_ENVIRONMENT_ID=
-```
+After deploying actions, create the required webhooks (Admin/System/Webhook subscription):
+- `get_rates` → `plugin.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates`
+- - `type` → `after`
 
 ---
 
