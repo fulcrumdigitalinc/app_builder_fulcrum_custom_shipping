@@ -46,6 +46,8 @@ npm install -g @adobe/aio-cli
 ```
 - Access to the [Adobe Developer Console](https://console.adobe.io/) with an App Builder license.
 
+CARRIERS GRID
+<a img src="https://drive.google.com/file/d/1CUUaxoS7v4zqRMuRQDhxoj1-W-M-qUMv/view?usp=sharing">
 ### Install Adobe Commerce Modules (PaaS only)
 ```bash
 composer require magento/module-out-of-process-shipping-methods --with-dependencies
