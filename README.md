@@ -74,7 +74,7 @@ XXXXXXXXXXXXXXXXXXXXXXXX
 ### Create Webhooks
 After deploying actions, create the required webhooks (Admin/System/Webhook subscription):
 - `get_rates` → `plugin.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates`
-- - `type` → `after`
+- `type` → `after`
 
 ---
 
