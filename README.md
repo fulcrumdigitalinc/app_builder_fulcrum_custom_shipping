@@ -7,6 +7,7 @@ This project implements a **carrier grid** powered by **Adobe App Builder** and 
 For more details on the extensibility framework, see the [Adobe Commerce Checkout Starter Kit docs](https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/).
 You can download the <a target="_blank" href="https://docs.google.com/document/d/1rrvvXR9E-XeHFnKwxMwG-y_zwaCshOMrmH4D9_HcqRg/edit?usp=sharing">USER GUIDE</a>
 Or the <a target="_blank" href="https://docs.google.com/document/d/1auF_ueMR5jAqGKTSOknEOorKmBvLELc3Pk2f__5a_XU/edit?usp=sharing">DETAILED DESCRIPTION GUIDE</a>
+
 ---
 
 ## Table of Contents
