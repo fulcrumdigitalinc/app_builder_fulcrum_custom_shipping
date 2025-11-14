@@ -6,17 +6,12 @@
   "dependencies": {
     "@adobe/aio-lib-files": "^4.1.2",
     "@adobe/aio-lib-ims": "^8.1.1",
-    "@adobe/aio-lib-state": "^5.1.0",
     "@adobe/aio-sdk": "^6.0.0",
-    "@adobe/eslint-config-aio-lib-config": "^4.0.0",
     "@adobe/exc-app": "^1.4.20",
     "@adobe/react-spectrum": "^3.45.0",
     "@adobe/uix-guest": "^1.0.5",
     "@react-aria/visually-hidden": "^3.8.28",
-    "cloudevents": "^10.0.0",
     "core-js": "^3.46.0",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-config-standard": "^17.1.0",
     "got": "^14.6.4",
     "node-fetch": "^3.3.2",
     "oauth-1.0a": "^2.2.6",
@@ -29,9 +24,6 @@
     "uuid": "^13.0.0"
   },
   "devDependencies": {
-    "@babel/eslint-parser": "^7.28.5",
-    "@babel/preset-react": "^7.28.5",
-    "@openwhisk/wskdebug": "^1.2.0",
     "@types/jest": "^30.0.0",
     "dotenv": "^17.2.3",
     "eslint": "^9.39.1",
