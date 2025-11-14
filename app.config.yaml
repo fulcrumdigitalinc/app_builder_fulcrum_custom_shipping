@@ -54,4 +54,4 @@ extensions:
 productDependencies:
   - code: COMMC
     minVersion: 2.4.4
-    maxVersion: 2.4.999
+    maxVersion: 2.4.8
