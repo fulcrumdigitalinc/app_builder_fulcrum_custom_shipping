@@ -1,46 +1,62 @@
 project:
   name: fulcrum_custom_shipping
 
-application:
-  hooks:
-    pre-app-build: ./hooks/pre-app-build.js
-  actions: actions
-  runtimeManifest:
-    packages:
-      application:
-        license: Apache-2.0
-        actions:
-          info:
-            function: actions/commerce-checkout-starter-kit-info/index.js
-            web: 'yes'
-            runtime: nodejs:22
-            annotations:
-              require-adobe-auth: true
-              final: true
-          shipping-methods:
-            function: actions/shipping-methods/index.js
-            web: 'yes'
-            runtime: nodejs:22
-            inputs:
-              LOG_LEVEL: debug
-              COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
-              AIO_runtime_namespace: $AIO_runtime_namespace
-              AIO_runtime_apihost: $AIO_runtime_apihost
-              COMMERCE_BASE_URL: $COMMERCE_BASE_URL
-              OAUTH_CLIENT_ID: $OAUTH_CLIENT_ID
-              OAUTH_CLIENT_SECRET: $OAUTH_CLIENT_SECRET
-              OAUTH_SCOPES: $OAUTH_SCOPES
- 
-            annotations:
-              require-adobe-auth: true
-              raw-http: true
-              final: true
+  application:
+    hooks:
+      pre-app-build: ./hooks/pre-app-build.js
 
-extensions:
-  commerce/backend-ui/1:
-    $include: commerce-backend-ui-1/ext.config.yaml
+    actions:
+      actions:
+        runtimeManifest:
+          packages:
+            application:
+              license: Apache-2.0
+              actions:
+                info:
+                  function: actions/commerce-checkout-starter-kit-info/index.js
+                  web: 'yes'
+                  runtime: nodejs:22
+                  annotations:
+                    require-adobe-auth: true
+                    final: true
 
-productDependencies:
-  - code: COMMC
-    minVersion: 2.4.4
-    maxVersion: 2.4.8
+                shipping-methods:
+                  function: actions/shipping-methods/index.js
+                  web: 'yes'
+                  runtime: nodejs:22
+                  inputs:
+                    LOG_LEVEL: debug
+
+                    # Webhooks / runtime info
+                    COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
+                    AIO_runtime_namespace: $AIO_runtime_namespace
+                    AIO_runtime_apihost: $AIO_runtime_apihost
+
+                    COMMERCE_BASE_URL: $COMMERCE_BASE_URL
+
+                    OAUTH_CLIENT_ID: $OAUTH_CLIENT_ID
+                    OAUTH_CLIENT_SECRETS: $OAUTH_CLIENT_SECRETS
+                    OAUTH_TECHNICAL_ACCOUNT_ID: $OAUTH_TECHNICAL_ACCOUNT_ID
+                    OAUTH_TECHNICAL_ACCOUNT_EMAIL: $OAUTH_TECHNICAL_ACCOUNT_EMAIL
+                    OAUTH_IMS_ORG_ID: $OAUTH_IMS_ORG_ID
+                    OAUTH_SCOPES: $OAUTH_SCOPES
+                    AIO_CLI_ENV: $AIO_CLI_ENV
+
+                    COMMERCE_CONSUMER_KEY: $COMMERCE_CONSUMER_KEY
+                    COMMERCE_CONSUMER_SECRET: $COMMERCE_CONSUMER_SECRET
+                    COMMERCE_ACCESS_TOKEN: $COMMERCE_ACCESS_TOKEN
+                    COMMERCE_ACCESS_TOKEN_SECRET: $COMMERCE_ACCESS_TOKEN_SECRET
+
+                  annotations:
+                    require-adobe-auth: true
+                    raw-http: true
+                    final: true
+
+    extensions:
+      commerce/backend-ui/1:
+        $include: commerce-backend-ui-1/ext.config.yaml
+
+    productDependencies:
+      - code: COMMC
+        minVersion: 2.4.4
+        maxVersion: 2.4.8
