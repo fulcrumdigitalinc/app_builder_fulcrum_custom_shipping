@@ -1,6 +1,7 @@
 {
   "name": "fulcrum-custom-shipping",
   "version": "1.0.0",
+  "author": "Fulcrum Digital Inc.",
   "private": true,
   "dependencies": {
     "@adobe/aio-lib-files": "^4.1.2",
