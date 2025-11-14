@@ -43,7 +43,7 @@ application:
               OAUTH_SCOPES: $OAUTH_SCOPES
  
             annotations:
-              require-adobe-auth: false
+              require-adobe-auth: true
               raw-http: true
               final: true
 
