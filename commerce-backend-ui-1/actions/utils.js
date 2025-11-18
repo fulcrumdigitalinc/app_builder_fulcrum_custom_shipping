@@ -11,6 +11,7 @@ governing permissions and limitations under the License.
 */
 
 /* This file exposes some common utilities for your actions */
+const { resolveOAuthParams } = require('../../lib/oauth');
 
 /**
  * Returns a log ready string of the action input parameters.
@@ -151,5 +152,6 @@ module.exports = {
   getBearerToken,
   stringParameters,
   checkMissingRequestInputs,
-  getAccessToken
+  getAccessToken,
+  resolveOAuthParams
 };
