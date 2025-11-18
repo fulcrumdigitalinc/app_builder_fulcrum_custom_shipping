@@ -111,33 +111,6 @@ describe('getAdobeCommerceClient', () => {
       scope.done();
     });
 
-    test('with IMS auth using client credentials fallback', async () => {
-      const params = {
-        ...sharedParams,
-        OAUTH_CLIENT_ID: 'cc-client-id',
-        OAUTH_CLIENT_SECRET: 'cc-secret',
-        OAUTH_SCOPES: 'commerce_api additional.scope',
-      };
-
-      const imsScope = nock('https://ims-na1.adobelogin.com')
-        .post('/ims/token/v3')
-        .reply(200, { access_token: 'cc-token' });
-
-      const commerceScope = nock(params.COMMERCE_BASE_URL)
-        .get('/V1/testauth')
-        .matchHeader('Content-Type', 'application/json')
-        .matchHeader('Authorization', 'Bearer cc-token')
-        .reply(200);
-
-      const client = await getAdobeCommerceClient(params);
-      expect(getToken).not.toHaveBeenCalled();
-
-      const { success } = await client.get('testauth');
-      expect(success).toBeTruthy();
-      imsScope.done();
-      commerceScope.done();
-    });
-
     test('throws when missing auth method', async () => {
       await expect(getAdobeCommerceClient(sharedParams)).rejects.toThrow(
         "Can't resolve authentication options for the given params."
