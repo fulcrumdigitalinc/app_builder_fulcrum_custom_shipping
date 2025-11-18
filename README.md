@@ -95,49 +95,7 @@ After deploying actions, create the required webhooks (Admin/System/Webhook subs
 <img width="759" height="902" alt="image" src="https://github.com/user-attachments/assets/3afa537f-cf85-443e-a2f2-359a73870b42" />
 
 
-# PaaS Compatibility & Authentication Modes
 
-Adobe Commerce PaaS requires support for both IMS authentication and Commerce
-Integration OAuth1.0a. This app automatically selects the correct
-authentication method based on available environment variables.
-
-Runtime actions such as `shipping-methods` use `lib/adobe-auth.js` and
-`lib/adobe-commerce.js` to choose between:
-
-## Option 1 — IMS Authentication (OAuth2)
-Recommended for SaaS and supported on PaaS when IMS is enabled.
-
-Required variables:
-- OAUTH_CLIENT_ID  
-- OAUTH_CLIENT_SECRETS  
-- OAUTH_TECHNICAL_ACCOUNT_ID  
-- OAUTH_TECHNICAL_ACCOUNT_EMAIL  
-- OAUTH_IMS_ORG_ID  
-- OAUTH_SCOPES  
-
-IMS setup for PaaS:  
-https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/connect/#adobe-identity-management-service-ims
-
-## Option 2 — Commerce Integration (OAuth1.0a) — REQUIRED FOR PaaS
-For PaaS without IMS, create an Integration in Commerce Admin:
-
-System → Integrations → Add New
-
-Map credentials:
-- COMMERCE_CONSUMER_KEY  
-- COMMERCE_CONSUMER_SECRET  
-- COMMERCE_ACCESS_TOKEN  
-- COMMERCE_ACCESS_TOKEN_SECRET  
-
-When these variables are present, runtime actions authenticate using OAuth1.0a.
-
-## Authentication Selection Logic
-The app chooses auth mode automatically:
-
-1. If `COMMERCE_CONSUMER_*` variables exist → use OAuth1.0a  
-2. Else if `OAUTH_*` variables exist → use IMS OAuth2  
-
-This ensures full SaaS + PaaS compatibility.
 
 ## Actions
 
