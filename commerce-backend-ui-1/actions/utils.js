@@ -11,7 +11,9 @@ governing permissions and limitations under the License.
 */
 
 /* This file exposes some common utilities for your actions */
-const { resolveOAuthParams } = require('../../lib/oauth');
+const { Core } = require('@adobe/aio-sdk');
+const { resolveAuthOptions } = require('../../lib/adobe-auth');
+const { getCommerceHttpClient } = require('../../lib/adobe-commerce');
 
 /**
  * Returns a log ready string of the action input parameters.
@@ -133,25 +135,22 @@ function errorResponse(statusCode, message, logger) {
   };
 }
 
-async function getAccessToken($clientId,$clientSecret,$scope) {
-    const url = 'https://ims-na1.adobelogin.com/ims/token/v3';
-    const body = new URLSearchParams({
-      grant_type: 'client_credentials',
-      client_id: $clientId,
-      client_secret: $clientSecret,
-      scope: $scope
-    });
-    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
-    const j = await r.json();
-    if (!r.ok || j.error) throw new Error(`Failed to get access token → ${JSON.stringify(j)}`);
-    return j.access_token;
+async function initCommerceClient(params, logger) {
+  const baseUrl = params.COMMERCE_BASE_URL || process.env.COMMERCE_BASE_URL;
+  if (!baseUrl) {
+    throw new Error('Missing COMMERCE_BASE_URL');
   }
+
+  const authOptions = await resolveAuthOptions(params);
+  const effectiveLogger =
+    logger || Core.Logger('commerce-client', { level: params.LOG_LEVEL ?? 'info' });
+  return getCommerceHttpClient(baseUrl, { ...authOptions, logger: effectiveLogger });
+}
 
 module.exports = {
   errorResponse,
   getBearerToken,
   stringParameters,
   checkMissingRequestInputs,
-  getAccessToken,
-  resolveOAuthParams
+  initCommerceClient,
 };
