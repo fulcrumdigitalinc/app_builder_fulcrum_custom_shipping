@@ -58,6 +58,34 @@ describe('getAdobeCommerceClient', () => {
       scope.done();
     });
 
+    test('with IMS auth using legacy OAUTH_CLIENT_SECRET', async () => {
+      const params = {
+        ...sharedParams,
+        OAUTH_CLIENT_ID: 'test-client-id',
+        OAUTH_CLIENT_SECRET: 'legacysecret',
+        OAUTH_TECHNICAL_ACCOUNT_ID: 'test-technical-account-id',
+        OAUTH_TECHNICAL_ACCOUNT_EMAIL: 'test-email@example.com',
+        OAUTH_IMS_ORG_ID: 'test-org-id',
+        OAUTH_SCOPES: 'scope-one,scope-two',
+      };
+      getToken.mockResolvedValue('legacytoken');
+
+      const scope = nock(params.COMMERCE_BASE_URL)
+        .get('/V1/testauth')
+        .matchHeader('Content-Type', 'application/json')
+        .matchHeader('x-ims-org-id', params.OAUTH_IMS_ORG_ID)
+        .matchHeader('x-api-key', params.OAUTH_CLIENT_ID)
+        .matchHeader('Authorization', 'Bearer legacytoken')
+        .reply(200);
+
+      const client = await getAdobeCommerceClient(params);
+      expect(getToken).toHaveBeenCalled();
+
+      const { success } = await client.get('testauth');
+      expect(success).toBeTruthy();
+      scope.done();
+    });
+
     test('with Commerce integration auth', async () => {
       const params = {
         ...sharedParams,
@@ -81,6 +109,33 @@ describe('getAdobeCommerceClient', () => {
       const { success } = await client.get('testauth');
       expect(success).toBeTruthy();
       scope.done();
+    });
+
+    test('with IMS auth using client credentials fallback', async () => {
+      const params = {
+        ...sharedParams,
+        OAUTH_CLIENT_ID: 'cc-client-id',
+        OAUTH_CLIENT_SECRET: 'cc-secret',
+        OAUTH_SCOPES: 'commerce_api additional.scope',
+      };
+
+      const imsScope = nock('https://ims-na1.adobelogin.com')
+        .post('/ims/token/v3')
+        .reply(200, { access_token: 'cc-token' });
+
+      const commerceScope = nock(params.COMMERCE_BASE_URL)
+        .get('/V1/testauth')
+        .matchHeader('Content-Type', 'application/json')
+        .matchHeader('Authorization', 'Bearer cc-token')
+        .reply(200);
+
+      const client = await getAdobeCommerceClient(params);
+      expect(getToken).not.toHaveBeenCalled();
+
+      const { success } = await client.get('testauth');
+      expect(success).toBeTruthy();
+      imsScope.done();
+      commerceScope.done();
     });
 
     test('throws when missing auth method', async () => {
