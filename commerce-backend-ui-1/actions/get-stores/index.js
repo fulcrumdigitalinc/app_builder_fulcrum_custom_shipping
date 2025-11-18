@@ -9,9 +9,6 @@ exports.main = async function main(params) {
     } catch (error) {
       return { statusCode: 500, body: { message: error.message } };
     }
-    if (!OAUTH_CLIENT_ID || !OAUTH_CLIENT_SECRET) {
-      return { statusCode: 500, body: { message: 'Missing IMS client credentials' } };
-    }
 
     const endpoint = 'V1/store/storeConfigs';
     let data;
