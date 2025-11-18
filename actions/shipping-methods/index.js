@@ -4,12 +4,15 @@ Licensed under the Apache License, Version 2.0
 */
 
 const { Core } = require('@adobe/aio-sdk');
-const { webhookVerify, getAdobeCommerceClient } = require('../../lib/adobe-commerce');
+const { webhookVerify } = require('../../lib/adobe-commerce');
 const { HTTP_OK } = require('../../lib/http');
+const { resolveOAuthParams } = require('../../lib/oauth');
+const fetch = require('node-fetch');
 const FilesLib = require('@adobe/aio-lib-files');
 
 // ---------- Small utilities (English comments) ----------
 const b64decode = (b64) => { try { return Buffer.from(b64, 'base64').toString('utf8'); } catch { return '{}'; } };
+const normalizeBaseUrl = (u = '') => (u && !u.endsWith('/') ? `${u}/` : u);
 const slugify = (s, f = 'method') => ((s ?? '').toString().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')) || f;
 
 const ok = (ops) => ({ statusCode: HTTP_OK, body: JSON.stringify(ops) });
@@ -241,6 +244,27 @@ async function readCustomFromFiles(files, code, logger) {
   return {};
 }
 
+// ---------- IMS token (client_credentials; scope optional) ----------
+async function getAccessToken(clientId, clientSecret, scopes = 'commerce_api') {
+  const url = 'https://ims-na1.adobelogin.com/ims/token/v3';
+  const form = {
+    grant_type: 'client_credentials',
+    client_id: String(clientId || ''),
+    client_secret: String(clientSecret || '')
+  };
+  if (scopes && String(scopes).trim()) form.scope = String(scopes);
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams(form)
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.access_token) {
+    throw new Error(json.error_description || json.error || `IMS HTTP ${res.status}`);
+  }
+  return json.access_token;
+}
+
 // ---------- NEW: string picker to avoid empty/undefined method titles ----------
 function pickString(...vals) {
   for (const v of vals) {
@@ -269,7 +293,12 @@ async function main(params) {
     // Config
     const DEFAULT_PRICE = Number(params.DEFAULT_PRICE ?? 0) || 0; // default price = 0
     const COMMERCE_BASE_URL = params.COMMERCE_BASE_URL || process.env.COMMERCE_BASE_URL; // should end with /rest/
+    const { clientId: OAUTH_CLIENT_ID, clientSecret: OAUTH_CLIENT_SECRET, scopes: OAUTH_SCOPES }
+      = resolveOAuthParams(params);
     if (!COMMERCE_BASE_URL) return ok([errorOp('Missing COMMERCE_BASE_URL')]);
+    if (!OAUTH_CLIENT_ID) return ok([errorOp('Missing OAUTH_CLIENT_ID')]);
+    if (!OAUTH_CLIENT_SECRET) return ok([errorOp('Missing OAUTH_CLIENT_SECRET or OAUTH_CLIENT_SECRETS')]);
+    const base = normalizeBaseUrl(COMMERCE_BASE_URL);
 
     // Init Files (non-fatal)
     let files = null;
@@ -278,18 +307,19 @@ async function main(params) {
     // Fetch carriers from Commerce REST
     let carriers = [];
     try {
-      const commerce = await getAdobeCommerceClient({ ...params, COMMERCE_BASE_URL });
-      const response = await commerce.getOopeShippingCarriers();
-      if (!response.success || !Array.isArray(response.message)) {
-        const snippetSource = response.body ?? response.message ?? 'Unknown error';
-        const snippet = typeof snippetSource === 'string'
-          ? snippetSource
-          : JSON.stringify(snippetSource);
-        return ok([errorOp(`Commerce API error: ${snippet.replace(/\s+/g, ' ').slice(0, 160)}`)]);
+      const token = await getAccessToken(OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET, OAUTH_SCOPES);
+      const r = await fetch(`${base}V1/oope_shipping_carrier`, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const raw = await r.text();
+      try { carriers = JSON.parse(raw); } catch { carriers = []; }
+      if (!r.ok || !Array.isArray(carriers)) {
+        const snippet = String(raw || '').replace(/\s+/g, ' ').slice(0, 160);
+        return ok([errorOp(`REST HTTP ${r.status} ${snippet}`)]);
       }
-      carriers = response.message;
     } catch (e) {
-      return ok([errorOp(`Commerce client error: ${e.message}`)]);
+      return ok([errorOp(`REST fetch error: ${e.message}`)]);
     }
 
     // Build operations with REST active + min/max + stores + customer_groups

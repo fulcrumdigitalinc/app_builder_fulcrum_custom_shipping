@@ -1,4 +1,5 @@
 const { Core } = require('@adobe/aio-sdk');
+const fetch = require('node-fetch');
 const FilesLib = require('@adobe/aio-lib-files');
 const utils = require('../utils.js');
 
@@ -31,28 +32,22 @@ exports.main = async function (params) {
     }
     if (!code) return { statusCode: 400, headers: cors, body: { ok: false, message: 'Missing code' } };
 
-    let commerce;
-    try {
-      commerce = await utils.initCommerceClient(params, logger);
-    } catch (error) {
-      return { statusCode: 500, headers: cors, body: { ok: false, message: error.message } };
+    const { clientId, clientSecret, scopes: scope } = utils.resolveOAuthParams(params);
+    if (!clientId || !clientSecret) {
+      return { statusCode: 500, headers: cors, body: { ok: false, message: 'Missing IMS client credentials' } };
     }
+    let baseUrl = process.env.COMMERCE_BASE_URL || params.COMMERCE_BASE_URL;
+    if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
 
-    let delRaw = '';
-    let deletedInCommerce = false;
-    try {
-      const response = await commerce(`V1/oope_shipping_carrier/${encodeURIComponent(code)}`, {
-        method: 'DELETE',
-        responseType: 'text',
-        resolveBodyOnly: false,
-        throwHttpErrors: false,
-      });
-      delRaw = response.body;
-      let delJson = null; try { delJson = JSON.parse(delRaw); } catch {}
-      deletedInCommerce = response.statusCode >= 200 && response.statusCode < 300 && delJson && delJson.success === true;
-    } catch (error) {
-      return { statusCode: 502, headers: cors, body: { ok: false, message: `Failed to delete carrier: ${error.message}` } };
-    }
+    const token = await utils.getAccessToken(clientId, clientSecret, scope);
+    const delUrl = `${baseUrl}/V1/oope_shipping_carrier/${encodeURIComponent(code)}`;
+    const delRes = await fetch(delUrl, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+    });
+    const delRaw = await delRes.text();
+    let delJson = null; try { delJson = JSON.parse(delRaw); } catch {}
+    const deletedInCommerce = delRes.ok && delJson && delJson.success === true;
 
     let stateDeleted = false;
     try {

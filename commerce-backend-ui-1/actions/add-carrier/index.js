@@ -4,8 +4,11 @@ Licensed under the Apache License, Version 2.0
 */
 
 const { Core } = require('@adobe/aio-sdk');
+const fetch = require('node-fetch');
 const FilesLib = require('@adobe/aio-lib-files');
 const utils = require('../utils.js');
+
+function normalizeBaseUrl(u = '') { return u && !u.endsWith('/') ? (u + '/') : u; }
 
 async function initFiles() {
   if (FilesLib?.init) return FilesLib.init();
@@ -78,86 +81,69 @@ function buildNativePayload(input) {
 }
 
 // Read by code
-async function getCarrierByCode(commerce, code) {
-  try {
-    const response = await commerce(`V1/oope_shipping_carrier/${encodeURIComponent(code)}`, {
-      method: 'GET',
-      responseType: 'text',
-      resolveBodyOnly: false,
-      throwHttpErrors: false,
-    });
-    if (response.statusCode === 404) return { exists: false };
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return { exists: true, body: response.body };
-    }
-    return { exists: undefined, status: response.statusCode, body: response.body };
-  } catch (error) {
-    return { exists: undefined, status: error.response?.statusCode, body: error.message };
-  }
+async function getCarrierByCode(base, token, code) {
+  const res = await fetch(`${base}V1/oope_shipping_carrier/${encodeURIComponent(code)}`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (res.status === 404) return { exists: false };
+  const text = await res.text();
+  if (!res.ok) return { exists: undefined, status: res.status, body: text };
+  return { exists: true, body: text };
 }
 
 // Create
-async function createCarrier(commerce, nativePayload) {
-  try {
-    const response = await commerce('V1/oope_shipping_carrier', {
-      method: 'POST',
-      json: { carrier: nativePayload },
-      responseType: 'text',
-      resolveBodyOnly: false,
-      throwHttpErrors: false,
-    });
-    return { ok: response.statusCode >= 200 && response.statusCode < 300, status: response.statusCode, text: response.body, method: 'POST' };
-  } catch (error) {
-    return { ok: false, status: error.response?.statusCode || 500, text: error.message, method: 'POST' };
-  }
+async function createCarrier(base, token, nativePayload) {
+  const resp = await fetch(`${base}V1/oope_shipping_carrier`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ carrier: nativePayload }),
+  });
+  const text = await resp.text();
+  return { ok: resp.ok, status: resp.status, text, method: 'POST' };
 }
 
 // Update (best effort PUT; some installs ignore it)
-async function putCarrier(commerce, nativePayload) {
-  try {
-    const response = await commerce(`V1/oope_shipping_carrier/${encodeURIComponent(nativePayload.code)}`, {
-      method: 'PUT',
-      json: { carrier: nativePayload },
-      responseType: 'text',
-      resolveBodyOnly: false,
-      throwHttpErrors: false,
-    });
-    return { ok: response.statusCode >= 200 && response.statusCode < 300, status: response.statusCode, text: response.body, method: 'PUT' };
-  } catch (error) {
-    return { ok: false, status: error.response?.statusCode || 500, text: error.message, method: 'PUT' };
-  }
+async function putCarrier(base, token, nativePayload) {
+  const resp = await fetch(`${base}V1/oope_shipping_carrier/${encodeURIComponent(nativePayload.code)}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ carrier: nativePayload }),
+  });
+  const text = await resp.text();
+  return { ok: resp.ok, status: resp.status, text, method: 'PUT' };
 }
 
 // Hard replace: DELETE then POST (guaranteed update)
-async function replaceCarrier(commerce, code, nativePayload) {
+async function replaceCarrier(base, token, code, nativePayload) {
   // DELETE (ignore failure)
   try {
-    await commerce(`V1/oope_shipping_carrier/${encodeURIComponent(code)}`, {
+    await fetch(`${base}V1/oope_shipping_carrier/${encodeURIComponent(code)}`, {
       method: 'DELETE',
-      throwHttpErrors: false,
+      headers: { Authorization: `Bearer ${token}` }
     });
   } catch { /* ignore */ }
   // POST
-  return createCarrier(commerce, nativePayload);
+  return createCarrier(base, token, nativePayload);
 }
 
 // Upsert strategy:
 //   - If not exists -> POST
 //   - If exists -> HARD REPLACE (DELETE + POST)
 //   - If POST fails on replace, fall back to PUT and surface its result
-async function upsertCarrier(commerce, nativePayload) {
-  const exists = await getCarrierByCode(commerce, nativePayload.code);
+async function upsertCarrier(base, token, nativePayload) {
+  const exists = await getCarrierByCode(base, token, nativePayload.code);
 
   if (exists.exists === false) {
-    return createCarrier(commerce, nativePayload);
+    return createCarrier(base, token, nativePayload);
   }
   if (exists.exists === true) {
     // Force replace to avoid "200 but no change" behavior
-    const rep = await replaceCarrier(commerce, nativePayload.code, nativePayload);
+    const rep = await replaceCarrier(base, token, nativePayload.code, nativePayload);
     if (rep.ok) return { ...rep, method: 'REPLACED' };
 
     // Fallback: try PUT if replace failed
-    const put = await putCarrier(commerce, nativePayload);
+    const put = await putCarrier(base, token, nativePayload);
     return put.ok ? put : rep;
   }
 
@@ -179,12 +165,16 @@ exports.main = async function main(params) {
       return { statusCode: 200, headers: cors, body: {} };
     }
 
-    let commerce;
-    try {
-      commerce = await utils.initCommerceClient(params, logger);
-    } catch (error) {
-      return { statusCode: 500, headers: cors, body: { ok: false, message: error.message } };
+    const { COMMERCE_BASE_URL } = params;
+    const { clientId: OAUTH_CLIENT_ID, clientSecret: OAUTH_CLIENT_SECRET, scopes: OAUTH_SCOPES }
+      = utils.resolveOAuthParams(params);
+    if (!COMMERCE_BASE_URL) {
+      return { statusCode: 500, headers: cors, body: { ok: false, message: 'Missing COMMERCE_BASE_URL' } };
     }
+    if (!OAUTH_CLIENT_ID || !OAUTH_CLIENT_SECRET) {
+      return { statusCode: 500, headers: cors, body: { ok: false, message: 'Missing IMS client credentials' } };
+    }
+    const base = normalizeBaseUrl(COMMERCE_BASE_URL);
 
     // Parse incoming payload
     let carrier = params.carrier;
@@ -207,9 +197,12 @@ exports.main = async function main(params) {
       return { statusCode: 400, headers: cors, body: { ok: false, message: 'Title is required by the REST API (POST/PUT)' } };
     }
 
+    // OAuth
+    const token = await utils.getAccessToken(OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET, OAUTH_SCOPES);
+
     // Build payload and upsert
     const nativePayload = buildNativePayload(carrier);
-    const up = await upsertCarrier(commerce, nativePayload);
+    const up = await upsertCarrier(base, token, nativePayload);
 
     // Always return HTTP 200; use ok flag for logical status
     if (!up.ok) {
