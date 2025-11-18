@@ -1,9 +1,16 @@
 const { Core } = require('@adobe/aio-sdk');
-const fetch = require('node-fetch');
 const FilesLib = require('@adobe/aio-lib-files');
 const utils = require('../utils.js');
 
-function normalizeBaseUrl(u = '') { return u && !u.endsWith('/') ? (u + '/') : u; }
+function formatCommerceError(error) {
+  if (!error) return 'Unknown error';
+  if (error.response && error.response.body !== undefined) {
+    const body = error.response.body;
+    if (typeof body === 'string') return body;
+    try { return JSON.stringify(body); } catch { return String(body); }
+  }
+  return error.message || 'Unknown error';
+}
 
 async function initFiles() {
   if (FilesLib?.init) return FilesLib.init();
@@ -24,19 +31,24 @@ exports.main = async function main(params) {
       return { statusCode: 200, headers: cors, body: {} };
     }
 
-    const { COMMERCE_BASE_URL, OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET, OAUTH_SCOPES = 'commerce_api' } = params;
-    if (!COMMERCE_BASE_URL) return { statusCode: 500, headers: cors, body: { ok: false, error: 'Missing COMMERCE_BASE_URL' } };
-    const base = normalizeBaseUrl(COMMERCE_BASE_URL);
+    let commerce;
+    try {
+      commerce = await utils.initCommerceClient(params, logger);
+    } catch (error) {
+      return { statusCode: 500, headers: cors, body: { ok: false, error: error.message } };
+    }
 
-    const token = await utils.getAccessToken(OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET, OAUTH_SCOPES);
-
-    const endpoint = `${base}V1/oope_shipping_carrier`;
-    const r = await fetch(endpoint, { headers: { Authorization: `Bearer ${token}` } });
-    const raw = await r.text();
     let carriers = [];
-    try { carriers = JSON.parse(raw); } catch {}
-    if (!r.ok || !Array.isArray(carriers)) {
-      return { statusCode: r.status || 502, headers: cors, body: { ok: false, error: 'Failed to fetch carriers', raw } };
+    try {
+      carriers = await commerce('V1/oope_shipping_carrier', { method: 'GET' }).json();
+    } catch (error) {
+      const raw = formatCommerceError(error);
+      const statusCode = error.response?.statusCode || 502;
+      return { statusCode, headers: cors, body: { ok: false, error: 'Failed to fetch carriers', raw } };
+    }
+
+    if (!Array.isArray(carriers)) {
+      return { statusCode: 502, headers: cors, body: { ok: false, error: 'Invalid carriers response', raw: carriers } };
     }
 
     const files = await initFiles();

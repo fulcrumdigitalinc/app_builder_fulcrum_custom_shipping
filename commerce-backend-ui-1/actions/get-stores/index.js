@@ -1,27 +1,29 @@
-const fetch = require('node-fetch');
 const utils = require('../utils.js');
 
 
 exports.main = async function main(params) {
   try {
-    const {
-      COMMERCE_BASE_URL,
-      OAUTH_CLIENT_ID,
-      OAUTH_CLIENT_SECRET,
-      OAUTH_SCOPES = 'commerce_api'
-    } = params;
-
-    if (!COMMERCE_BASE_URL) {
-      return { statusCode: 500, body: { message: 'Missing COMMERCE_BASE_URL' } };
+    let commerce;
+    try {
+      commerce = await utils.initCommerceClient(params);
+    } catch (error) {
+      return { statusCode: 500, body: { message: error.message } };
     }
 
-    const token = await utils.getAccessToken(OAUTH_CLIENT_ID,OAUTH_CLIENT_SECRET,OAUTH_SCOPES);
-    
-    const url = `${COMMERCE_BASE_URL.replace(/\/?$/, '/') }V1/store/storeConfigs`;
-
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-    const data = await res.json();
-    if (!res.ok) throw new Error(`REST ${res.status}: ${JSON.stringify(data)}`);
+    const endpoint = 'V1/store/storeConfigs';
+    let data;
+    try {
+      data = await commerce(endpoint, { method: 'GET' }).json();
+    } catch (error) {
+      const statusCode = error.response?.statusCode || 500;
+      const raw =
+        error.response?.body === undefined
+          ? error.message
+          : typeof error.response.body === 'string'
+            ? error.response.body
+            : JSON.stringify(error.response.body);
+      return { statusCode, body: { message: `Failed to fetch stores: ${raw}` } };
+    }
 
     const arr = Array.isArray(data) ? data : (data?.items || []);
     const items = arr
