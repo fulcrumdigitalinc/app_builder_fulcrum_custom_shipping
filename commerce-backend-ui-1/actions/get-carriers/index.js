@@ -24,8 +24,13 @@ exports.main = async function main(params) {
       return { statusCode: 200, headers: cors, body: {} };
     }
 
-    const { COMMERCE_BASE_URL, OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET, OAUTH_SCOPES = 'commerce_api' } = params;
+    const { COMMERCE_BASE_URL } = params;
+    const { clientId: OAUTH_CLIENT_ID, clientSecret: OAUTH_CLIENT_SECRET, scopes: OAUTH_SCOPES }
+      = utils.resolveOAuthParams(params);
     if (!COMMERCE_BASE_URL) return { statusCode: 500, headers: cors, body: { ok: false, error: 'Missing COMMERCE_BASE_URL' } };
+    if (!OAUTH_CLIENT_ID || !OAUTH_CLIENT_SECRET) {
+      return { statusCode: 500, headers: cors, body: { ok: false, error: 'Missing IMS client credentials' } };
+    }
     const base = normalizeBaseUrl(COMMERCE_BASE_URL);
 
     const token = await utils.getAccessToken(OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET, OAUTH_SCOPES);

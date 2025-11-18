@@ -32,9 +32,10 @@ exports.main = async function (params) {
     }
     if (!code) return { statusCode: 400, headers: cors, body: { ok: false, message: 'Missing code' } };
 
-    const clientId = process.env.OAUTH_CLIENT_ID || params.OAUTH_CLIENT_ID;
-    const clientSecret = process.env.OAUTH_CLIENT_SECRET || params.OAUTH_CLIENT_SECRET;
-    const scope = process.env.OAUTH_SCOPES || params.OAUTH_SCOPES;
+    const { clientId, clientSecret, scopes: scope } = utils.resolveOAuthParams(params);
+    if (!clientId || !clientSecret) {
+      return { statusCode: 500, headers: cors, body: { ok: false, message: 'Missing IMS client credentials' } };
+    }
     let baseUrl = process.env.COMMERCE_BASE_URL || params.COMMERCE_BASE_URL;
     if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
 

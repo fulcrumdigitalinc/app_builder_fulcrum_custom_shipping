@@ -6,6 +6,7 @@ Licensed under the Apache License, Version 2.0
 const { Core } = require('@adobe/aio-sdk');
 const { webhookVerify } = require('../../lib/adobe-commerce');
 const { HTTP_OK } = require('../../lib/http');
+const { resolveOAuthParams } = require('../../lib/oauth');
 const fetch = require('node-fetch');
 const FilesLib = require('@adobe/aio-lib-files');
 
@@ -291,11 +292,12 @@ async function main(params) {
 
     // Config
     const DEFAULT_PRICE = Number(params.DEFAULT_PRICE ?? 0) || 0; // default price = 0
-    const COMMERCE_BASE_URL   = params.COMMERCE_BASE_URL   || process.env.COMMERCE_BASE_URL; // should end with /rest/
-    const OAUTH_CLIENT_ID     = params.OAUTH_CLIENT_ID     || process.env.OAUTH_CLIENT_ID;
-    const OAUTH_CLIENT_SECRET = params.OAUTH_CLIENT_SECRET || process.env.OAUTH_CLIENT_SECRET;
-    const OAUTH_SCOPES        = params.OAUTH_SCOPES        || process.env.OAUTH_SCOPES || 'commerce_api';
+    const COMMERCE_BASE_URL = params.COMMERCE_BASE_URL || process.env.COMMERCE_BASE_URL; // should end with /rest/
+    const { clientId: OAUTH_CLIENT_ID, clientSecret: OAUTH_CLIENT_SECRET, scopes: OAUTH_SCOPES }
+      = resolveOAuthParams(params);
     if (!COMMERCE_BASE_URL) return ok([errorOp('Missing COMMERCE_BASE_URL')]);
+    if (!OAUTH_CLIENT_ID) return ok([errorOp('Missing OAUTH_CLIENT_ID')]);
+    if (!OAUTH_CLIENT_SECRET) return ok([errorOp('Missing OAUTH_CLIENT_SECRET or OAUTH_CLIENT_SECRETS')]);
     const base = normalizeBaseUrl(COMMERCE_BASE_URL);
 
     // Init Files (non-fatal)
