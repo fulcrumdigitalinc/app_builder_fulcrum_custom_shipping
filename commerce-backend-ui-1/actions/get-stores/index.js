@@ -4,15 +4,15 @@ const utils = require('../utils.js');
 
 exports.main = async function main(params) {
   try {
-    const { COMMERCE_BASE_URL } = params;
-    const { clientId: OAUTH_CLIENT_ID, clientSecret: OAUTH_CLIENT_SECRET, scopes: OAUTH_SCOPES }
-      = utils.resolveOAuthParams(params);
+    const {
+      COMMERCE_BASE_URL,
+      OAUTH_CLIENT_ID,
+      OAUTH_CLIENT_SECRET,
+      OAUTH_SCOPES = 'commerce_api'
+    } = params;
 
     if (!COMMERCE_BASE_URL) {
       return { statusCode: 500, body: { message: 'Missing COMMERCE_BASE_URL' } };
-    }
-    if (!OAUTH_CLIENT_ID || !OAUTH_CLIENT_SECRET) {
-      return { statusCode: 500, body: { message: 'Missing IMS client credentials' } };
     }
 
     const token = await utils.getAccessToken(OAUTH_CLIENT_ID,OAUTH_CLIENT_SECRET,OAUTH_SCOPES);
