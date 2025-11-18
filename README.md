@@ -62,6 +62,16 @@ composer require "magento/commerce-backend-sdk": ">=3.0"
 
 ---
 
+## Environment Variables
+Two authentication strategies are supported when the actions communicate with Adobe Commerce APIs:
+
+1. **IMS (OAuth Server-to-Server)** – Recommended for SaaS and also supported on PaaS. Make sure the Commerce instance has the IMS module enabled as described in the [Checkout Starter Kit docs](https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/connect/#adobe-identity-management-service-ims); without that extra configuration step IMS tokens will be rejected by PaaS environments.
+2. **Commerce Integration (OAuth 1.0a)** – Available on PaaS. Create an integration in *Admin → System → Integrations* and copy the `consumer_key`, `consumer_secret`, `access_token`, and `access_token_secret` into `.env` (`COMMERCE_CONSUMER_KEY`, `COMMERCE_CONSUMER_SECRET`, `COMMERCE_ACCESS_TOKEN`, `COMMERCE_ACCESS_TOKEN_SECRET`).
+
+Populate the `.env` file using either of the above options (see `env.dist` for the full list) and the values will automatically be passed to every runtime action that needs to call Commerce APIs.
+
+---
+
 ## Webhooks
 ### Prepare Webhook Signature
 1. Go to **Stores > Settings > Configuration > Adobe Services > Webhooks**
