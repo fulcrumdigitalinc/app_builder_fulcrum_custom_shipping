@@ -1,32 +1,27 @@
+const fetch = require('node-fetch');
 const utils = require('../utils.js');
 
 
 exports.main = async function main(params) {
   try {
-    let commerce;
-    try {
-      commerce = await utils.initCommerceClient(params);
-    } catch (error) {
-      return { statusCode: 500, body: { message: error.message } };
+    const { COMMERCE_BASE_URL } = params;
+    const { clientId: OAUTH_CLIENT_ID, clientSecret: OAUTH_CLIENT_SECRET, scopes: OAUTH_SCOPES }
+      = utils.resolveOAuthParams(params);
+
+    if (!COMMERCE_BASE_URL) {
+      return { statusCode: 500, body: { message: 'Missing COMMERCE_BASE_URL' } };
     }
     if (!OAUTH_CLIENT_ID || !OAUTH_CLIENT_SECRET) {
       return { statusCode: 500, body: { message: 'Missing IMS client credentials' } };
     }
 
-    const endpoint = 'V1/store/storeConfigs';
-    let data;
-    try {
-      data = await commerce(endpoint, { method: 'GET' }).json();
-    } catch (error) {
-      const statusCode = error.response?.statusCode || 500;
-      const raw =
-        error.response?.body === undefined
-          ? error.message
-          : typeof error.response.body === 'string'
-            ? error.response.body
-            : JSON.stringify(error.response.body);
-      return { statusCode, body: { message: `Failed to fetch stores: ${raw}` } };
-    }
+    const token = await utils.getAccessToken(OAUTH_CLIENT_ID,OAUTH_CLIENT_SECRET,OAUTH_SCOPES);
+    
+    const url = `${COMMERCE_BASE_URL.replace(/\/?$/, '/') }V1/store/storeConfigs`;
+
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    const data = await res.json();
+    if (!res.ok) throw new Error(`REST ${res.status}: ${JSON.stringify(data)}`);
 
     const arr = Array.isArray(data) ? data : (data?.items || []);
     const items = arr
