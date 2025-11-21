@@ -40,10 +40,9 @@ application:
               COMMERCE_BASE_URL: $COMMERCE_BASE_URL
               OAUTH_CLIENT_ID: $OAUTH_CLIENT_ID
               OAUTH_CLIENT_SECRET: $OAUTH_CLIENT_SECRET
-              OAUTH_SCOPES: $OAUTH_SCOPES
- 
+              OAUTH_SCOPES: $OAUTH_SCOPES 
             annotations:
-              require-adobe-auth: false
+              require-adobe-auth: true
               raw-http: true
               final: true
 
@@ -54,3 +53,4 @@ extensions:
 productDependencies:
   - code: COMMC
     minVersion: 2.4.4
+    maxVersion: 2.4.8
