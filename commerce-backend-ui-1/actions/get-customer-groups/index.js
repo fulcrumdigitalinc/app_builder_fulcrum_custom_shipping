@@ -1,5 +1,5 @@
 
-const fetch = require('node-fetch');
+// const fetch = require('node-fetch'); // use global fetch
 const utils = require('../utils.js');
 
 exports.main = async function main(params) {

@@ -1,5 +1,5 @@
 const { Core } = require('@adobe/aio-sdk');
-const fetch = require('node-fetch');
+// const fetch = require('node-fetch'); // use global fetch
 const FilesLib = require('@adobe/aio-lib-files');
 const utils = require('../utils.js');
 
