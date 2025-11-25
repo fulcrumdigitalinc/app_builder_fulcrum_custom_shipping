@@ -5,15 +5,11 @@
   "dependencies": {
     "@adobe/aio-lib-files": "^4.1.2",
     "@adobe/aio-lib-ims": "^8.1.1",
-    "@adobe/aio-lib-state": "^5.2.0",
     "@adobe/aio-sdk": "^6.0.0",
-    "@adobe/eslint-config-aio-lib-config": "^4.0.0",
     "@adobe/exc-app": "^1.4.20",
     "@adobe/react-spectrum": "^3.45.0",
     "@adobe/uix-guest": "1.0.3",
-    "cloudevents": "^10.0.0",
     "core-js": "^3.47.0",
-    "eslint-config-prettier": "^10.1.8",
     "got": "^14.6.5",
     "js-yaml": "^4.1.1",
     "node-fetch": "^3.3.2",
@@ -27,9 +23,6 @@
     "uuid": "^13.0.0"
   },
   "devDependencies": {
-    "@babel/eslint-parser": "^7.28.5",
-    "@babel/preset-react": "^7.28.5",
-    "@openwhisk/wskdebug": "^1.4.0",
     "@types/jest": "^30.0.0",
     "dotenv": "^17.2.3",
     "eslint": "8.57.1",
@@ -38,9 +31,9 @@
     "jest": "^30",
     "js-yaml": "^4.1.1",
     "nock": "^14.0.10",
-    "wait-for-expect": "^4.0.0",
     "react-router": "6.26.2",
-    "react-router-dom": "6.26.2"
+    "react-router-dom": "6.26.2",
+    "wait-for-expect": "^4.0.0"
   },
   "scripts": {
     "test": "jest --passWithNoTests ./test",
