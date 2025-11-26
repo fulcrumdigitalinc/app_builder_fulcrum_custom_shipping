@@ -13,22 +13,6 @@ governing permissions and limitations under the License.
 /* This file exposes some common utilities for your actions */
 
 /**
- * Returns a log ready string of the action input parameters.
- * The `Authorization` header content will be replaced by '<hidden>'.
- *
- * @param {object} params action input parameters.
- * @returns {string} the stringified parameters.
- */
-function stringParameters(params) {
-  // hide authorization token without overriding params
-  let headers = params.__ow_headers || {};
-  if (headers.authorization) {
-    headers = { ...headers, authorization: '<hidden>' };
-  }
-  return JSON.stringify({ ...params, __ow_headers: headers });
-}
-
-/**
  *
  * Returns the list of missing keys giving an object and its required keys.
  * A parameter is missing if its value is undefined or ''.
@@ -89,35 +73,7 @@ function checkMissingRequestInputs(params, requiredParams = [], requiredHeaders 
   return errorMessage;
 }
 
-/**
- *
- * Extracts the bearer token string from the Authorization header in the request parameters.
- *
- * @param {object} params action input parameters.
- * @returns {string|undefined} the token string or undefined if not set in request headers.
- */
-function getBearerToken(params) {
-  if (
-    params.__ow_headers &&
-    params.__ow_headers.authorization &&
-    params.__ow_headers.authorization.startsWith('Bearer ')
-  ) {
-    return params.__ow_headers.authorization.substring('Bearer '.length);
-  }
-  return undefined;
-}
-/**
- *
- * Returns an error response object and attempts to log.info the status code and error message
- *
- * @param {number} statusCode the error status code.
- *        e.g. 400
- * @param {string} message the error message.
- *        e.g. 'missing xyz parameter'
- * @param {*} [logger] an optional logger instance object with an `info` method
- *        e.g. `new require('@adobe/aio-sdk').Core.Logger('name')`
- * @returns {object} the error object, ready to be returned from the action main's function.
- */
+
 function errorResponse(statusCode, message, logger) {
   if (logger && typeof logger.info === 'function') {
     logger.info(`${statusCode}: ${message}`);
@@ -148,8 +104,6 @@ async function getAccessToken($clientId,$clientSecret,$scope) {
 
 module.exports = {
   errorResponse,
-  getBearerToken,
-  stringParameters,
   checkMissingRequestInputs,
   getAccessToken
 };

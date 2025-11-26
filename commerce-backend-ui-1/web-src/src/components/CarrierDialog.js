@@ -199,7 +199,7 @@ function CarrierDialog({
       <Divider />
       <Content>
         <Form maxWidth="100%">
-          <Grid columns={['1fr','1fr']} gap="size-200" alignItems="end">
+          <Grid columns={['1fr','1fr']} gap="size-200" alignItems="start">
             <TextField
               label="Code *"
               value={form.code}

@@ -1,12 +1,11 @@
 const { Core } = require('@adobe/aio-sdk');
-const fetch = require('node-fetch');
 const FilesLib = require('@adobe/aio-lib-files');
-const utils = require('../utils.js');
+const { getAdobeCommerceClient } = require('../../../lib/adobe-commerce');
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS'
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 async function initFiles() {
@@ -15,7 +14,7 @@ async function initFiles() {
 }
 
 exports.main = async function (params) {
-  if (params.__ow_method === 'options') {
+  if ((params.__ow_method || '').toLowerCase() === 'options') {
     return { statusCode: 204, headers: cors, body: '' };
   }
 
@@ -32,41 +31,20 @@ exports.main = async function (params) {
     }
     if (!code) return { statusCode: 400, headers: cors, body: { ok: false, message: 'Missing code' } };
 
-    const clientId = process.env.OAUTH_CLIENT_ID || params.OAUTH_CLIENT_ID;
-    const clientSecret = process.env.OAUTH_CLIENT_SECRET || params.OAUTH_CLIENT_SECRET;
-    const scope = process.env.OAUTH_SCOPES || params.OAUTH_SCOPES;
-    let baseUrl = process.env.COMMERCE_BASE_URL || params.COMMERCE_BASE_URL;
-    if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
-
-    const token = await utils.getAccessToken(clientId, clientSecret, scope);
-    const delUrl = `${baseUrl}/V1/oope_shipping_carrier/${encodeURIComponent(code)}`;
-    const delRes = await fetch(delUrl, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
-    });
-    const delRaw = await delRes.text();
-    let delJson = null; try { delJson = JSON.parse(delRaw); } catch {}
-    const deletedInCommerce = delRes.ok && delJson && delJson.success === true;
+    const commerce = await getAdobeCommerceClient(params);
+    const delRes = await commerce.delete(`oope_shipping_carrier/${encodeURIComponent(code)}`);
+    const deletedInCommerce = !!delRes.success;
+    const delRaw = JSON.stringify(delRes.message);
 
     let stateDeleted = false;
     try {
       const files = await initFiles();
       const keyJson = `carrier_custom_${code}.json`;
-      const keyLegacy = `carrier_custom_${code}`; 
+      const keyLegacy = `carrier_custom_${code}`;
 
       let deletedAny = false;
-      try {
-        await files.delete(keyJson);
-        deletedAny = true;
-      } catch (e1) {
-        // ignore
-      }
-      try {
-        await files.delete(keyLegacy);
-        deletedAny = true;
-      } catch (e2) {
-        // ignore
-      }
+      try { await files.delete(keyJson); deletedAny = true; } catch {}
+      try { await files.delete(keyLegacy); deletedAny = true; } catch {}
       stateDeleted = deletedAny;
     } catch (e) {
       logger.warn(`Files delete failed for ${code}: ${e.message}`);

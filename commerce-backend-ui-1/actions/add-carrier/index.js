@@ -4,11 +4,8 @@ Licensed under the Apache License, Version 2.0
 */
 
 const { Core } = require('@adobe/aio-sdk');
-const fetch = require('node-fetch');
 const FilesLib = require('@adobe/aio-lib-files');
-const utils = require('../utils.js');
-
-function normalizeBaseUrl(u = '') { return u && !u.endsWith('/') ? (u + '/') : u; }
+const { getAdobeCommerceClient } = require('../../../lib/adobe-commerce');
 
 async function initFiles() {
   if (FilesLib?.init) return FilesLib.init();
@@ -18,7 +15,7 @@ async function initFiles() {
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS'
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 function toBool(v) {
@@ -27,15 +24,16 @@ function toBool(v) {
   if (typeof v === 'number') return v !== 0;
   if (typeof v === 'string') {
     const s = v.trim().toLowerCase();
-    if (['true','1','yes','on','si','sí'].includes(s)) return true;
-    if (['false','0','no','off'].includes(s)) return false;
+    if (['true', '1', 'yes', 'on', 'si', 'sí'].includes(s)) return true;
+    if (['false', '0', 'no', 'off'].includes(s)) return false;
   }
   return !!v;
 }
-const toNumOrNull  = (v) => (v === '' || v === null || v === undefined) ? null : (Number.isFinite(Number(v)) ? Number(v) : null);
-const toStrOrNull  = (v) => (v === '' || v === null || v === undefined) ? null : String(v);
-const toStrArray   = (arr) => Array.from(new Set((arr || []).map(String))).filter(Boolean);
-const toIntArray   = (arr) => (Array.isArray(arr) ? arr.map(n => Number(n)).filter(Number.isInteger) : []);
+const toNumOrNull = (v) =>
+  v === '' || v === null || v === undefined ? null : Number.isFinite(Number(v)) ? Number(v) : null;
+const toStrOrNull = (v) => (v === '' || v === null || v === undefined ? null : String(v));
+const toStrArray = (arr) => Array.from(new Set((arr || []).map(String))).filter(Boolean);
+const toIntArray = (arr) => (Array.isArray(arr) ? arr.map((n) => Number(n)).filter(Number.isInteger) : []);
 
 // Custom fields persisted in Files
 const CUSTOM_SCHEMA = {
@@ -45,19 +43,27 @@ const CUSTOM_SCHEMA = {
   maximum: 'number',
   customer_groups: 'intArray',
   price_per_item: 'boolean',
-  stores: 'strArray'
+  stores: 'strArray',
 };
 
-function clearValueFor(type) { return (type === 'intArray' || type === 'strArray') ? [] : null; }
+function clearValueFor(type) {
+  return type === 'intArray' || type === 'strArray' ? [] : null;
+}
 
 function normalizeCustomValue(type, value) {
   switch (type) {
-    case 'string': return toStrOrNull(value);
-    case 'number': return toNumOrNull(value);
-    case 'boolean': return toBool(value);
-    case 'intArray': return toIntArray(value);
-    case 'strArray': return toStrArray(value);
-    default: return value ?? null;
+    case 'string':
+      return toStrOrNull(value);
+    case 'number':
+      return toNumOrNull(value);
+    case 'boolean':
+      return toBool(value);
+    case 'intArray':
+      return toIntArray(value);
+    case 'strArray':
+      return toStrArray(value);
+    default:
+      return value ?? null;
   }
 }
 
@@ -81,78 +87,60 @@ function buildNativePayload(input) {
 }
 
 // Read by code
-async function getCarrierByCode(base, token, code) {
-  const res = await fetch(`${base}V1/oope_shipping_carrier/${encodeURIComponent(code)}`, {
-    method: 'GET',
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  if (res.status === 404) return { exists: false };
-  const text = await res.text();
-  if (!res.ok) return { exists: undefined, status: res.status, body: text };
-  return { exists: true, body: text };
+async function getCarrierByCode(commerce, code) {
+  const res = await commerce.get(`oope_shipping_carrier/${encodeURIComponent(code)}`);
+  if (res.statusCode === 404) return { exists: false };
+  if (!res.success) return { exists: undefined, status: res.statusCode, body: res.message };
+  return { exists: true, body: res.message };
 }
 
 // Create
-async function createCarrier(base, token, nativePayload) {
-  const resp = await fetch(`${base}V1/oope_shipping_carrier`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ carrier: nativePayload }),
-  });
-  const text = await resp.text();
-  return { ok: resp.ok, status: resp.status, text, method: 'POST' };
+async function createCarrier(commerce, nativePayload) {
+  const resp = await commerce.post('oope_shipping_carrier', { carrier: nativePayload });
+  return { ok: resp.success, status: resp.statusCode, text: JSON.stringify(resp.message), method: 'POST' };
 }
 
 // Update (best effort PUT; some installs ignore it)
-async function putCarrier(base, token, nativePayload) {
-  const resp = await fetch(`${base}V1/oope_shipping_carrier/${encodeURIComponent(nativePayload.code)}`, {
-    method: 'PUT',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ carrier: nativePayload }),
+async function putCarrier(commerce, nativePayload) {
+  const resp = await commerce.post(`oope_shipping_carrier/${encodeURIComponent(nativePayload.code)}`, {
+    carrier: nativePayload,
   });
-  const text = await resp.text();
-  return { ok: resp.ok, status: resp.status, text, method: 'PUT' };
+  return { ok: resp.success, status: resp.statusCode, text: JSON.stringify(resp.message), method: 'PUT' };
 }
 
 // Hard replace: DELETE then POST (guaranteed update)
-async function replaceCarrier(base, token, code, nativePayload) {
-  // DELETE (ignore failure)
+async function replaceCarrier(commerce, code, nativePayload) {
   try {
-    await fetch(`${base}V1/oope_shipping_carrier/${encodeURIComponent(code)}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` }
-    });
-  } catch { /* ignore */ }
-  // POST
-  return createCarrier(base, token, nativePayload);
+    await commerce.delete(`oope_shipping_carrier/${encodeURIComponent(code)}`);
+  } catch (e) {
+    /* ignore */
+  }
+  return createCarrier(commerce, nativePayload);
 }
 
 // Upsert strategy:
 //   - If not exists -> POST
 //   - If exists -> HARD REPLACE (DELETE + POST)
 //   - If POST fails on replace, fall back to PUT and surface its result
-async function upsertCarrier(base, token, nativePayload) {
-  const exists = await getCarrierByCode(base, token, nativePayload.code);
+async function upsertCarrier(commerce, nativePayload) {
+  const exists = await getCarrierByCode(commerce, nativePayload.code);
 
   if (exists.exists === false) {
-    return createCarrier(base, token, nativePayload);
+    return createCarrier(commerce, nativePayload);
   }
   if (exists.exists === true) {
-    // Force replace to avoid "200 but no change" behavior
-    const rep = await replaceCarrier(base, token, nativePayload.code, nativePayload);
+    const rep = await replaceCarrier(commerce, nativePayload.code, nativePayload);
     if (rep.ok) return { ...rep, method: 'REPLACED' };
 
-    // Fallback: try PUT if replace failed
-    const put = await putCarrier(base, token, nativePayload);
+    const put = await putCarrier(commerce, nativePayload);
     return put.ok ? put : rep;
   }
 
-  // GET failed, unknown state
   return {
     ok: false,
     status: exists.status || 500,
     method: 'GET',
-    text: exists.body || 'Unable to determine existence (GET failed)'
+    text: exists.body || 'Unable to determine existence (GET failed)',
   };
 }
 
@@ -160,46 +148,47 @@ exports.main = async function main(params) {
   const logger = Core.Logger('add-carrier', { level: params.LOG_LEVEL || 'info' });
 
   try {
-    // CORS preflight
     if ((params.__ow_method || '').toUpperCase() === 'OPTIONS') {
       return { statusCode: 200, headers: cors, body: {} };
     }
 
-    const { COMMERCE_BASE_URL, OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET, OAUTH_SCOPES = 'commerce_api' } = params;
+    const { COMMERCE_BASE_URL } = params;
     if (!COMMERCE_BASE_URL) {
       return { statusCode: 500, headers: cors, body: { ok: false, message: 'Missing COMMERCE_BASE_URL' } };
     }
-    const base = normalizeBaseUrl(COMMERCE_BASE_URL);
 
-    // Parse incoming payload
     let carrier = params.carrier;
-    if (carrier && typeof carrier === 'string') { try { carrier = JSON.parse(carrier); } catch {} }
+    if (carrier && typeof carrier === 'string') {
+      try { carrier = JSON.parse(carrier); } catch {}
+    }
     if (!carrier) {
       try {
         const raw = params.__ow_body ? Buffer.from(params.__ow_body, 'base64').toString('utf8') : '{}';
         const parsed = JSON.parse(raw || '{}');
         carrier = parsed.carrier || parsed;
-        if (carrier && typeof carrier === 'string') { try { carrier = JSON.parse(carrier); } catch {} }
+        if (carrier && typeof carrier === 'string') {
+          try { carrier = JSON.parse(carrier); } catch {}
+        }
       } catch {}
     }
     if (!carrier || !carrier.code) {
       return { statusCode: 400, headers: cors, body: { ok: false, message: 'Missing carrier payload' } };
     }
 
-    // REST requires title
     const hasTitle = carrier.title !== undefined && String(carrier.title).trim() !== '';
     if (!hasTitle) {
-      return { statusCode: 400, headers: cors, body: { ok: false, message: 'Title is required by the REST API (POST/PUT)' } };
+      return {
+        statusCode: 400,
+        headers: cors,
+        body: { ok: false, message: 'Title is required by the REST API (POST/PUT)' }
+      };
     }
 
-    // OAuth
-    const token = await utils.getAccessToken(OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET, OAUTH_SCOPES);
+    const commerce = await getAdobeCommerceClient(params);
 
-    // Build payload and upsert
     const nativePayload = buildNativePayload(carrier);
-    const up = await upsertCarrier(base, token, nativePayload);
+    const up = await upsertCarrier(commerce, nativePayload);
 
-    // Always return HTTP 200; use ok flag for logical status
     if (!up.ok) {
       let magentoMsg = '';
       try {
@@ -222,7 +211,6 @@ exports.main = async function main(params) {
       };
     }
 
-    // Merge custom fields into Files
     const vars = (carrier && typeof carrier.variables === 'object' && carrier.variables) || {};
     const hasVariablesObject = Object.prototype.hasOwnProperty.call(carrier, 'variables');
 

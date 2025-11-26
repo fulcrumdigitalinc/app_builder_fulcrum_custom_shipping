@@ -1,17 +1,6 @@
 project:
   name: fulcrum_custom_shipping
 
-aio:
-  ims:
-    contexts:
-      Credential__in__Checkout__SK__-__Stage:
-        client_id: $AIO_ims_contexts_Credential__in__Checkout__SK__-__Stage_client__id
-        client_secret: $AIO_ims_contexts_Credential__in__Checkout__SK__-__Stage_client__secrets
-        technical_account_email: $AIO_ims_contexts_Credential__in__Checkout__SK__-__Stage_technical__account__email
-        technical_account_id: $AIO_ims_contexts_Credential__in__Checkout__SK__-__Stage_technical__account__id
-        ims_org_id: $AIO_ims_contexts_Credential__in__Checkout__SK__-__Stage_ims__org__id
-        scopes: $AIO_ims_contexts_Credential__in__Checkout__SK__-__Stage_scopes
-
 application:
   hooks:
     pre-app-build: ./hooks/pre-app-build.js
@@ -33,14 +22,19 @@ application:
             web: 'yes'
             runtime: nodejs:22
             inputs:
-              LOG_LEVEL: debug
+              LOG_LEVEL: info
               COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
               AIO_runtime_namespace: $AIO_runtime_namespace
               AIO_runtime_apihost: $AIO_runtime_apihost
               COMMERCE_BASE_URL: $COMMERCE_BASE_URL
+              COMMERCE_CONSUMER_KEY: $COMMERCE_CONSUMER_KEY
+              COMMERCE_CONSUMER_SECRET: $COMMERCE_CONSUMER_SECRET
+              COMMERCE_ACCESS_TOKEN: $COMMERCE_ACCESS_TOKEN
+              COMMERCE_ACCESS_TOKEN_SECRET: $COMMERCE_ACCESS_TOKEN_SECRET
               OAUTH_CLIENT_ID: $OAUTH_CLIENT_ID
               OAUTH_CLIENT_SECRET: $OAUTH_CLIENT_SECRET
-              OAUTH_SCOPES: $OAUTH_SCOPES 
+              OAUTH_SCOPES: $OAUTH_SCOPES
+
             annotations:
               require-adobe-auth: true
               raw-http: true
@@ -54,3 +48,4 @@ productDependencies:
   - code: COMMC
     minVersion: 2.4.4
     maxVersion: 2.4.8
+

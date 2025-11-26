@@ -1,27 +1,24 @@
-const fetch = require('node-fetch');
-const utils = require('../utils.js');
-
-
+const { getAdobeCommerceClient } = require('../../../lib/adobe-commerce');
+ 
 exports.main = async function main(params) {
   try {
     const {
       COMMERCE_BASE_URL,
-      OAUTH_CLIENT_ID,
-      OAUTH_CLIENT_SECRET,
-      OAUTH_SCOPES = 'commerce_api'
     } = params;
 
     if (!COMMERCE_BASE_URL) {
       return { statusCode: 500, body: { message: 'Missing COMMERCE_BASE_URL' } };
     }
-
-    const token = await utils.getAccessToken(OAUTH_CLIENT_ID,OAUTH_CLIENT_SECRET,OAUTH_SCOPES);
-    
-    const url = `${COMMERCE_BASE_URL.replace(/\/?$/, '/') }V1/store/storeConfigs`;
-
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-    const data = await res.json();
-    if (!res.ok) throw new Error(`REST ${res.status}: ${JSON.stringify(data)}`);
+ 
+    const commerce = await getAdobeCommerceClient(params);
+    const response = await commerce.get('store/storeConfigs');
+    if (!response.success) {
+      return {
+        statusCode: response.statusCode || 500,
+        body: { message: response.message || 'Failed to load stores' },
+      };
+    }
+    const data = response.message;
 
     const arr = Array.isArray(data) ? data : (data?.items || []);
     const items = arr

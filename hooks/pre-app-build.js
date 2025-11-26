@@ -10,10 +10,17 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
+const fs = require('fs');
+const path = require('path');
 const { Core } = require('@adobe/aio-sdk');
 const logger = Core.Logger('hooks/pre-app-build', { level: process.env.LOG_LEVEL || 'info' });
 
 module.exports = () => {
-  require('../scripts/sync-oauth-credentials').main();
-  logger.info('Done');
+  const syncPath = path.join(__dirname, '..', 'scripts', 'sync-oauth-credentials.js');
+  if (fs.existsSync(syncPath)) {
+    require(syncPath).main();
+    logger.info('Synced OAuth credentials');
+  } else {
+    logger.info('Skipping sync-oauth-credentials (script not present)');
+  }
 };

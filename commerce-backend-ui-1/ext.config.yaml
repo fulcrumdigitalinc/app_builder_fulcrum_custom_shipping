@@ -16,7 +16,7 @@ runtimeManifest:
           web: 'yes'
           runtime: 'nodejs:22'
           inputs:
-            LOG_LEVEL: debug
+            LOG_LEVEL: info
           annotations:
             require-adobe-auth: true
             final: true
@@ -28,9 +28,13 @@ runtimeManifest:
     FulcrumCustomShippingMenu:
       license: Apache-2.0
       inputs:
-        LOG_LEVEL: debug
+        LOG_LEVEL: info
         AIO_CLI_ENV: $AIO_CLI_ENV
         COMMERCE_BASE_URL: $COMMERCE_BASE_URL
+        COMMERCE_CONSUMER_KEY: $COMMERCE_CONSUMER_KEY
+        COMMERCE_CONSUMER_SECRET: $COMMERCE_CONSUMER_SECRET
+        COMMERCE_ACCESS_TOKEN: $COMMERCE_ACCESS_TOKEN
+        COMMERCE_ACCESS_TOKEN_SECRET: $COMMERCE_ACCESS_TOKEN_SECRET
         OAUTH_CLIENT_ID: $OAUTH_CLIENT_ID
         OAUTH_CLIENT_SECRET: $OAUTH_CLIENT_SECRET
         OAUTH_TECHNICAL_ACCOUNT_ID: $OAUTH_TECHNICAL_ACCOUNT_ID
