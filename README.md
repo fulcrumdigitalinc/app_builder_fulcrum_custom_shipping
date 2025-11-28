@@ -5,20 +5,21 @@ Welcome to **Fulcrum Custom Shipping** (`fulcrum_custom_shipping`), a custom **O
 This project implements a **carrier grid** powered by **Adobe App Builder** and **Commerce Webhooks**, without installing modules in the Magento backend. It provides a configurable shipping method managed through the **Admin UI** and consumed by the **Checkout Starter Kit** or a custom Storefront.
 
 For more details on the extensibility framework, see the [Adobe Commerce Checkout Starter Kit docs](https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/).
+You can download the <a href="https://docs.google.com/document/d/1rrvvXR9E-XeHFnKwxMwG-y_zwaCshOMrmH4D9_HcqRg/edit?usp=sharing" target="_blank">USER GUIDE</a>
+Or the <a href="https://docs.google.com/document/d/1auF_ueMR5jAqGKTSOknEOorKmBvLELc3Pk2f__5a_XU/edit?usp=sharing" target="_blank">DETAILED DESCRIPTION GUIDE</a>
 
 ---
 
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)
-- [Install Adobe Commerce Modules (PaaS only)](#install-adobe-commerce-modules-paas-only)
+- [Install the require modules to configure the shipping extensions (PaaS Only)](#install-the-require-modules-to-configure-the-shipping-extensions-paas-only
 - [Create an App Builder Project](#create-an-app-builder-project)
 - [Initialize the Project](#initialize-the-project)
 - [Environment Variables](#environment-variables)
 - [Architecture](#architecture)
 - [Carrier Grid Configuration](#carrier-grid-configuration)
 - [Webhooks](#webhooks)
-- [Eventing](#eventing)
 - [Deploy](#deploy)
 - [Actions](#actions)
   - [`add-carrier`](#add-carrier)
@@ -45,7 +46,7 @@ npm install -g @adobe/aio-cli
 ```
 - Access to the [Adobe Developer Console](https://console.adobe.io/) with an App Builder license.
 
-### Install Adobe Commerce Modules (PaaS only)
+### Install the require modules to configure the shipping extensions (PaaS Only)
 ```bash
 composer require magento/module-out-of-process-shipping-methods --with-dependencies
 ```
@@ -73,23 +74,28 @@ XXXXXXXXXXXXXXXXXXXXXXXX
 ```
 
 ### Create Webhooks
-After deploying actions, create the required webhooks:
-- `collect-taxes` → `plugin.magento.out_of_process_tax_management.api.oop_tax_collection.collect_taxes`
+After deploying actions, create the required webhooks (Admin/System/Webhook subscription):
+- `get_rates` → `plugin.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates`
+- `type` → `after`
 
 ---
+### Carriers Grid
+<img width="2456" height="720" alt="image" src="https://github.com/user-attachments/assets/6f5a17a4-307d-422a-97df-c763d830f654" />
 
-## Eventing
-Configure event provider:
-```bash
-npm run configure-events
-```
-Update `.env` with:
-```env
-COMMERCE_ADOBE_IO_EVENTS_MERCHANT_ID=
-COMMERCE_ADOBE_IO_EVENTS_ENVIRONMENT_ID=
-```
 
----
+### Add Carrier
+<img width="645" height="696" alt="image" src="https://github.com/user-attachments/assets/01a39481-eadf-41b5-a42f-edad0bdbe350" />
+
+
+### Edit Carrier
+<img width="645" height="696" alt="image" src="https://github.com/user-attachments/assets/6d5dbd7c-bc76-4c60-85de-dcf99711ba05" />
+
+
+### Checkout
+<img width="759" height="902" alt="image" src="https://github.com/user-attachments/assets/3afa537f-cf85-443e-a2f2-359a73870b42" />
+
+
+
 
 ## Actions
 
