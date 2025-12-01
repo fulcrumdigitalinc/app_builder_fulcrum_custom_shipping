@@ -4,12 +4,17 @@ Licensed under the Apache License, Version 2.0
 */
 
 const { Core } = require('@adobe/aio-sdk');
-const { webhookVerify, getAdobeCommerceClient } = require('../../lib/adobe-commerce');
+const { webhookVerify } = require('../../lib/adobe-commerce');
 const { HTTP_OK } = require('../../lib/http');
+// ---- FIX: node-fetch wrapper compatible con webpack/ESM ----
+const fetchModule = require('node-fetch');
+const fetch = fetchModule.default || fetchModule;
+// ------------------------------------------------------------
 const FilesLib = require('@adobe/aio-lib-files');
 
 // ---------- Small utilities (English comments) ----------
 const b64decode = (b64) => { try { return Buffer.from(b64, 'base64').toString('utf8'); } catch { return '{}'; } };
+const normalizeBaseUrl = (u = '') => (u && !u.endsWith('/') ? `${u}/` : u);
 const slugify = (s, f = 'method') => ((s ?? '').toString().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')) || f;
 
 const ok = (ops) => ({ statusCode: HTTP_OK, body: JSON.stringify(ops) });
@@ -242,6 +247,26 @@ async function readCustomFromFiles(files, code, logger) {
 }
 
 // ---------- IMS token (client_credentials; scope optional) ----------
+async function getAccessToken(clientId, clientSecret, scopes = 'commerce_api') {
+  const url = 'https://ims-na1.adobelogin.com/ims/token/v3';
+  const form = {
+    grant_type: 'client_credentials',
+    client_id: String(clientId || ''),
+    client_secret: String(clientSecret || '')
+  };
+  if (scopes && String(scopes).trim()) form.scope = String(scopes);
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams(form)
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.access_token) {
+    throw new Error(json.error_description || json.error || `IMS HTTP ${res.status}`);
+  }
+  return json.access_token;
+}
+
 // ---------- NEW: string picker to avoid empty/undefined method titles ----------
 function pickString(...vals) {
   for (const v of vals) {
@@ -270,20 +295,33 @@ async function main(params) {
     // Config
     const DEFAULT_PRICE = Number(params.DEFAULT_PRICE ?? 0) || 0; // default price = 0
     const COMMERCE_BASE_URL   = params.COMMERCE_BASE_URL   || process.env.COMMERCE_BASE_URL; // should end with /rest/
+    const OAUTH_CLIENT_ID     = params.OAUTH_CLIENT_ID     || process.env.OAUTH_CLIENT_ID;
+    const OAUTH_CLIENT_SECRET = params.OAUTH_CLIENT_SECRET || process.env.OAUTH_CLIENT_SECRET;
+    const OAUTH_SCOPES        = params.OAUTH_SCOPES        || process.env.OAUTH_SCOPES || 'commerce_api';
     if (!COMMERCE_BASE_URL) return ok([errorOp('Missing COMMERCE_BASE_URL')]);
-    const commerce = await getAdobeCommerceClient(params);
+    const base = normalizeBaseUrl(COMMERCE_BASE_URL);
 
     // Init Files (non-fatal)
     let files = null;
     try { files = await initFiles(); } catch (e) { logger.warn(`aio-lib-files init failed: ${e.message}`); }
 
     // Fetch carriers from Commerce REST
-    const carriersResponse = await commerce.getOopeShippingCarriers();
-    if (!carriersResponse.success || !Array.isArray(carriersResponse.message)) {
-      const snippet = String(carriersResponse.message || '').replace(/\s+/g, ' ').slice(0, 160);
-      return ok([errorOp(`Commerce error ${carriersResponse.statusCode || ''} ${snippet}`)]);
+    let carriers = [];
+    try {
+      const token = await getAccessToken(OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET, OAUTH_SCOPES);
+      const r = await fetch(`${base}V1/oope_shipping_carrier`, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const raw = await r.text();
+      try { carriers = JSON.parse(raw); } catch { carriers = []; }
+      if (!r.ok || !Array.isArray(carriers)) {
+        const snippet = String(raw || '').replace(/\s+/g, ' ').slice(0, 160);
+        return ok([errorOp(`REST HTTP ${r.status} ${snippet}`)]);
+      }
+    } catch (e) {
+      return ok([errorOp(`REST fetch error: ${e.message}`)]);
     }
-    const carriers = carriersResponse.message;
 
     // Build operations with REST active + min/max + stores + customer_groups
     const ops = [];
@@ -315,7 +353,7 @@ async function main(params) {
       // CUSTOMER GROUPS (from JSON)
       if (!groupsMatch(request, custom.customer_groups)) continue;
 
-      // --------- CHANGED BLOCK: Titles / Codes only ----------
+      // --------- Titles / Codes ----------
       const methodTitle  = pickString(
         custom.method_name,
         custom.method_title,
@@ -344,7 +382,7 @@ async function main(params) {
         c.title,
         'Fulcrum Custom Shipping'
       );
-      // --------- END CHANGED BLOCK ----------
+      // --------- END Titles / Codes ----------
 
       // Price base (unit)
       const unitPrice = (pickNumber(custom.price, custom.value) !== null)

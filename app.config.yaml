@@ -17,23 +17,37 @@ application:
             annotations:
               require-adobe-auth: true
               final: true
+
           shipping-methods:
             function: actions/shipping-methods/index.js
             web: 'yes'
             runtime: nodejs:22
             inputs:
               LOG_LEVEL: info
-              COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
+
+              # Runtime (auto)
               AIO_runtime_namespace: $AIO_runtime_namespace
               AIO_runtime_apihost: $AIO_runtime_apihost
+
+              # Webhooks
+              COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
+
+              # Endpoint COMMERCE (SaaS o PaaS)
               COMMERCE_BASE_URL: $COMMERCE_BASE_URL
+
+              # ---------- SaaS (IMS OAuth) ----------
+              OAUTH_CLIENT_ID: $OAUTH_CLIENT_ID
+              OAUTH_CLIENT_SECRET: $OAUTH_CLIENT_SECRET
+              OAUTH_SCOPES: $OAUTH_SCOPES
+              OAUTH_IMS_ORG_ID: $OAUTH_IMS_ORG_ID
+              OAUTH_TECHNICAL_ACCOUNT_ID: $OAUTH_TECHNICAL_ACCOUNT_ID
+              OAUTH_TECHNICAL_ACCOUNT_EMAIL: $OAUTH_TECHNICAL_ACCOUNT_EMAIL
+
+              # ---------- PaaS (Commerce Integration) ----------
               COMMERCE_CONSUMER_KEY: $COMMERCE_CONSUMER_KEY
               COMMERCE_CONSUMER_SECRET: $COMMERCE_CONSUMER_SECRET
               COMMERCE_ACCESS_TOKEN: $COMMERCE_ACCESS_TOKEN
               COMMERCE_ACCESS_TOKEN_SECRET: $COMMERCE_ACCESS_TOKEN_SECRET
-              OAUTH_CLIENT_ID: $OAUTH_CLIENT_ID
-              OAUTH_CLIENT_SECRET: $OAUTH_CLIENT_SECRET
-              OAUTH_SCOPES: $OAUTH_SCOPES
 
             annotations:
               require-adobe-auth: true
@@ -48,4 +62,3 @@ productDependencies:
   - code: COMMC
     minVersion: 2.4.4
     maxVersion: 2.4.8
-
