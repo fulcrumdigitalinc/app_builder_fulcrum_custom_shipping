@@ -18,6 +18,9 @@ const mockFiles = {
 const mockWebhookVerify = jest.fn();
 const mockGetAdobeCommerceClient = jest.fn();
 
+jest.mock('node-fetch');
+const fetch = require('node-fetch');
+
 jest.mock('@adobe/aio-lib-files', () => ({
   init: jest.fn().mockResolvedValue(mockFiles),
 }));
@@ -35,6 +38,7 @@ describe('shipping-methods action', () => {
     mockFiles.write.mockClear();
     mockWebhookVerify.mockReset();
     mockGetAdobeCommerceClient.mockReset();
+    fetch.mockReset();
   });
 
   test('returns error op when webhook verify fails', async () => {
@@ -48,6 +52,23 @@ describe('shipping-methods action', () => {
 
   test('adds carrier when webhook passes and carriers exist', async () => {
     mockWebhookVerify.mockReturnValue({ success: true });
+    fetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'fake-token' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: async () =>
+          JSON.stringify([
+            {
+              code: 'FUL',
+              title: 'Fulcrum Carrier',
+              active: true,
+            },
+          ]),
+      });
     mockGetAdobeCommerceClient.mockResolvedValue({
       getOopeShippingCarriers: jest.fn().mockResolvedValue({
         success: true,
