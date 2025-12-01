@@ -61,6 +61,11 @@ composer require "magento/commerce-backend-sdk": ">=3.0"
 ```
 
 ---
+## Required APIs and credentials
+
+Credentials	OAuth Server-to-Server
+Enabled APIs	Commerce API + I/O Eventing
+OAuth Scope	commerce.accs
 
 ## Webhooks
 ### Prepare Webhook Signature
