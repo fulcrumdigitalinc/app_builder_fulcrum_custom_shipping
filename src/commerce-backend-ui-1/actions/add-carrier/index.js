@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0
 
 const { Core } = require('@adobe/aio-sdk');
 const FilesLib = require('@adobe/aio-lib-files');
-const { getAdobeCommerceClient } = require('../../../lib/adobe-commerce');
+const { getAdobeCommerceClient } = require('../../../../lib/adobe-commerce');
 
 async function initFiles() {
   if (FilesLib?.init) return FilesLib.init();

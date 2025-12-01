@@ -1,6 +1,6 @@
 const { Core } = require('@adobe/aio-sdk');
 const FilesLib = require('@adobe/aio-lib-files');
-const { getAdobeCommerceClient } = require('../../../lib/adobe-commerce');
+const { getAdobeCommerceClient } = require('../../../../lib/adobe-commerce');
 
 const cors = {
   'Access-Control-Allow-Origin': '*',

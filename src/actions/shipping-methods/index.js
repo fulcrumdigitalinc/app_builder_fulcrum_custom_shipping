@@ -4,8 +4,8 @@ Licensed under the Apache License, Version 2.0
 */
 
 const { Core } = require('@adobe/aio-sdk');
-const { webhookVerify } = require('../../lib/adobe-commerce');
-const { HTTP_OK } = require('../../lib/http');
+const { webhookVerify } = require('../../../lib/adobe-commerce');
+const { HTTP_OK } = require('../../../lib/http');
 // ---- FIX: node-fetch wrapper compatible con webpack/ESM ----
 const fetchModule = require('node-fetch');
 const fetch = fetchModule.default || fetchModule;
