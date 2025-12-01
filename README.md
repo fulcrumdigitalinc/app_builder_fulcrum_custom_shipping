@@ -72,14 +72,13 @@ COMMERCE_WEBHOOKS_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----
 XXXXXXXXXXXXXXXXXXXXXXXX
 -----END PUBLIC KEY-----"
 ```
-Connect to Adobe Commerce
-This guide explains how to integrate the checkout starter kit with Adobe Commerce.
+##Connect to Adobe Commerce
 
 The adobe-commerce.js file provides a set of methods to interact with the Adobe Commerce instance. The client uses the Adobe Commerce HTTP Client, which is a wrapper around the Adobe Commerce REST API.
 
 To use the Adobe Commerce HTTP Client, update the COMMERCE_BASE_URL value in the .env file, and complete the authentication setup.
 
-​PaaS onlyFor PaaS (On-Premise/Cloud):
+​###PaaS onlyFor PaaS (On-Premise/Cloud):
 
 COMMERCE_BASE_URL includes your base site URL + /rest/<store_view_code>/
 Example: https://<commerce_instance_url>/rest/<store_view_code>/
@@ -136,7 +135,7 @@ On the User Role tab, select the role that provides all necessary permissions fo
 
 ims-user-role.png
 
-Create a Commerce integration
+##Create a Commerce integration
 ​PaaS only This option allows communication between Commerce and App Builder.
 
 Create a new Adobe Commerce Integration by following the systems integration guide.
