@@ -168,6 +168,31 @@ After deploying actions, create the required webhooks (Admin/System/Webhook subs
 - `get_rates` → `plugin.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates`
 - `type` → `after`
 
+### Magento PaaS Webhook Module
+
+For Adobe Commerce PaaS (Cloud) compatibility, a small Magento module is provided:
+
+**Module name:** `Fulcrum_CustomShippingWebhook`  
+**Location:** `app/code/Fulcrum/CustomShippingWebhook`
+
+This module registers a Commerce webhook that forwards the **shipping methods** event to the Fulcrum Custom Shipping App Builder action.
+
+Key files:
+
+- `registration.php` – registers the module
+- `etc/module.xml` – basic module declaration
+- `etc/config.xml` – optional config flag (`fulcrum_custom_shipping_webhook/general/enabled`)
+- `etc/webhooks.xml` – declares the webhook:
+  - Topic: `plugin.sales.api.order_management.shipping_methods`
+  - Endpoint: your App Builder runtime URL (e.g. `/api/v1/web/FulcrumCustomShippingMenu/shipping-methods`)
+
+Once the module is in place:
+
+```bash
+bin/magento module:enable Fulcrum_CustomShippingWebhook
+bin/magento setup:upgrade
+bin/magento cache:flush
+
 ---
 ### Carriers Grid
 <img width="2456" height="720" alt="image" src="https://github.com/user-attachments/assets/6f5a17a4-307d-422a-97df-c763d830f654" />
