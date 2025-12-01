@@ -115,14 +115,14 @@ Copy the IMS credentials to the .env file in the root of the project.
 NOTE: These credentials are automatically populated in Configure OAuth Server-to-Server Credential.
 ```bash
 OAUTH_CLIENT_ID=<client id>
-OAUTH_CLIENT_SECRETS=<client secrets>
+OAUTH_CLIENT_SECRET=<client secret>
 OAUTH_TECHNICAL_ACCOUNT_ID=<technical account id>
 OAUTH_TECHNICAL_ACCOUNT_EMAIL=<technical account email>
 OAUTH_SCOPES=<scopes>
 OAUTH_IMS_ORG_ID=<img org>
 
 OAUTH_CLIENT_ID=<client id>
-OAUTH_CLIENT_SECRETS=<client secrets>
+OAUTH_CLIENT_SECRET=<client secret>
 OAUTH_TECHNICAL_ACCOUNT_ID=<technical account id>
 OAUTH_TECHNICAL_ACCOUNT_EMAIL=<technical account email>
 OAUTH_SCOPES=<scopes>
