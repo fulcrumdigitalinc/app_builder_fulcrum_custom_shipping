@@ -79,13 +79,14 @@ The adobe-commerce.js file provides a set of methods to interact with the Adobe 
 To use the Adobe Commerce HTTP Client, update the COMMERCE_BASE_URL value in the .env file, and complete the authentication setup.
 
 ​### PaaS onlyFor PaaS (On-Premise/Cloud):
-
+```bash
 COMMERCE_BASE_URL includes your base site URL + /rest/<store_view_code>/
 Example: https://<commerce_instance_url>/rest/<store_view_code>/
 ​SaaS onlyFor SaaS (Adobe Commerce as a Cloud Service):
 
 COMMERCE_BASE_URL must be the REST API endpoint provided by Adobe Commerce
 Example: https://na1.api.commerce.adobe.com/<tenant_id>/
+```
 Authentication
 Depending on your Adobe Commerce setup, there are two options to authenticate and communicate with App Builder:
 
@@ -107,7 +108,7 @@ Access your IMS credentials through the Adobe Developer Console. Select the proj
 Copy the IMS credentials to the .env file in the root of the project.
 
 NOTE: These credentials are automatically populated in Configure OAuth Server-to-Server Credential.
-
+```bash
 OAUTH_CLIENT_ID=<client id>
 OAUTH_CLIENT_SECRETS=<client secrets>
 OAUTH_TECHNICAL_ACCOUNT_ID=<technical account id>
@@ -121,6 +122,7 @@ OAUTH_TECHNICAL_ACCOUNT_ID=<technical account id>
 OAUTH_TECHNICAL_ACCOUNT_EMAIL=<technical account email>
 OAUTH_SCOPES=<scopes>
 OAUTH_IMS_ORG_ID=<img org>
+```
 Provide the technical account with access to the Commerce instance:
 
 ​SaaS only The technical account is automatically created and associated with the Commerce instance once the first request is made using the OAuth credentials.
@@ -145,7 +147,7 @@ Make sure your API integration has the necessary permissions to access the Comme
 To confirm that you have access, in the Commerce Admin, navigate to System > Extensions > Integrations. Under the Basic Settings menu, click API to view the Available APIs. Then select All in the Resource Access field.
 
 Copy the integration details (consumer key, consumer secret, access token, and access token secret) to the .env file in the root of the project.
-
+```bash
 COMMERCE_CONSUMER_KEY=<key>
 COMMERCE_CONSUMER_SECRET=<secret>
 COMMERCE_ACCESS_TOKEN=<access token>
@@ -155,7 +157,7 @@ COMMERCE_CONSUMER_KEY=<key>
 COMMERCE_CONSUMER_SECRET=<secret>
 COMMERCE_ACCESS_TOKEN=<access token>
 COMMERCE_ACCESS_TOKEN_SECRET=<access token secret>
-
+```
 ### Create Webhooks
 After deploying actions, create the required webhooks (Admin/System/Webhook subscription):
 - `get_rates` → `plugin.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates`
