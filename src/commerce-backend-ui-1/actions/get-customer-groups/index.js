@@ -1,5 +1,5 @@
 
-const { getAdobeCommerceClient } = require('../../../lib/adobe-commerce');
+const { getAdobeCommerceClient } = require('../../../../lib/adobe-commerce');
 
 exports.main = async function main(params) {
   try {

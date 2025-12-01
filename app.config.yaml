@@ -10,16 +10,8 @@ application:
       application:
         license: Apache-2.0
         actions:
-          info:
-            function: actions/commerce-checkout-starter-kit-info/index.js
-            web: 'yes'
-            runtime: nodejs:22
-            annotations:
-              require-adobe-auth: true
-              final: true
-
           shipping-methods:
-            function: actions/shipping-methods/index.js
+            function: src/actions/shipping-methods/index.js
             web: 'yes'
             runtime: nodejs:22
             inputs:
@@ -32,7 +24,7 @@ application:
               # Webhooks
               COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
 
-              # Endpoint COMMERCE (SaaS o PaaS)
+              # Endpoint COMMERCE (SaaS or PaaS)
               COMMERCE_BASE_URL: $COMMERCE_BASE_URL
 
               # ---------- SaaS (IMS OAuth) ----------
@@ -56,7 +48,7 @@ application:
 
 extensions:
   commerce/backend-ui/1:
-    $include: commerce-backend-ui-1/ext.config.yaml
+    $include: src/commerce-backend-ui-1/ext.config.yaml
 
 productDependencies:
   - code: COMMC

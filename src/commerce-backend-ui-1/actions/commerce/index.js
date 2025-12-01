@@ -11,7 +11,7 @@ governing permissions and limitations under the License.
 */
 const { Core } = require('@adobe/aio-sdk');
 const { errorResponse, checkMissingRequestInputs } = require('../utils');
-const { getAdobeCommerceClient } = require('../../../lib/adobe-commerce');
+const { getAdobeCommerceClient } = require('../../../../lib/adobe-commerce');
 
 const actionMap = {
   POST: (adobeCommerce, operation, payload) => {
