@@ -10,7 +10,6 @@ const FilesLib = require('@adobe/aio-lib-files');
 
 // ---------- Small utilities (English comments) ----------
 const b64decode = (b64) => { try { return Buffer.from(b64, 'base64').toString('utf8'); } catch { return '{}'; } };
-const normalizeBaseUrl = (u = '') => (u && !u.endsWith('/') ? `${u}/` : u);
 const slugify = (s, f = 'method') => ((s ?? '').toString().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')) || f;
 
 const ok = (ops) => ({ statusCode: HTTP_OK, body: JSON.stringify(ops) });
@@ -267,16 +266,8 @@ async function main(params) {
     const cartItemCount = extractCartItemCount(request);
     logger.info(`cartTotal = ${cartTotal}; cartItemCount = ${cartItemCount}`);
 
-    // Merge env + params so Adobe Commerce client can use both
-    const env = { ...process.env, ...params };
-
-    // Config
-    const DEFAULT_PRICE = Number(env.DEFAULT_PRICE ?? 0) || 0; // default price = 0
-    const COMMERCE_BASE_URL = env.COMMERCE_BASE_URL; // SaaS/PaaS base URL for adobe-commerce client
+    const { COMMERCE_BASE_URL } = params; // SaaS/PaaS base URL for adobe-commerce client
     if (!COMMERCE_BASE_URL) return ok([errorOp('Missing COMMERCE_BASE_URL')]);
-    const base = normalizeBaseUrl(COMMERCE_BASE_URL); // kept for logging/debug if needed
-    logger.info(`COMMERCE_BASE_URL (normalized) = ${base}`);
-
     // Init Files (non-fatal)
     let files = null;
     try { files = await initFiles(); } catch (e) { logger.warn(`aio-lib-files init failed: ${e.message}`); }
@@ -284,7 +275,7 @@ async function main(params) {
     // Fetch carriers via Adobe Commerce Client (handles IMS + Commerce Integration creds)
     let carriers = [];
     try {
-      const commerceClient = await getAdobeCommerceClient(env);
+      const commerceClient = await getAdobeCommerceClient(params);
       const listResponse = await commerceClient.getOopeShippingCarriers();
 
       if (!listResponse || !listResponse.success) {
@@ -368,7 +359,7 @@ async function main(params) {
       // Price base (unit)
       const unitPrice = (pickNumber(custom.price, custom.value) !== null)
         ? pickNumber(custom.price, custom.value)
-        : DEFAULT_PRICE;
+        : 0;
 
       // Legacy-proven price_per_item behavior (snake o camel)
       const ppiRaw = (custom.price_per_item !== undefined) ? custom.price_per_item : custom.pricePerItem;
