@@ -136,11 +136,13 @@ Provide the technical account with access to the Commerce instance:
 
 When associating the user with the account, find your Technical Account email as a part of generated IMS credentials with following pattern: <technical-account>@techacct.adobe.com and use that value in the Email field during user creation:
 
-ims-user-creation.png
+<img width="1280" height="327" alt="image" src="https://github.com/user-attachments/assets/1d5f5feb-e3e5-4f45-b327-1d81ab6e2ad8" />
+
 
 On the User Role tab, select the role that provides all necessary permissions for API integrations.
 
-ims-user-role.png
+<img width="1280" height="313" alt="image" src="https://github.com/user-attachments/assets/e0a0a8a0-3fb9-45e8-b2fa-3d01324e949b" />
+
 
 ##Create a Commerce integration
 ​PaaS only This option allows communication between Commerce and App Builder.
