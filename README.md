@@ -145,36 +145,40 @@ COMMERCE_BASE_URL=https://yourcommerce.com/rest/default/
 
 ## Architecture
 
-The project is composed of:
+Components:
 
 - Admin UI SDK extension (Carrier Grid)
 - App Builder Runtime Actions
 - Commerce Webhooks
 - aio-lib-commerce client
-- PaaS Magento Webhook module (for on-prem/cloud)
-- Checkout integration (Shipping rates)
+- PaaS Magento Webhook module
+- Checkout integration (shipping rates)
 
-High-level flow:
+Flow:
 
 ```
-Commerce (SaaS/PaaS) → Webhooks → App Builder Runtime → Carrier Storage → Admin UI Grid → Checkout
+Commerce Webhooks → Runtime Actions → Carrier Storage → Admin UI Grid → Checkout
 ```
 
 ---
 
 ## Carrier Grid Configuration
 
-The Carrier Grid UI communicates with App Builder Runtime actions and supports:
+### Carrier Grid Screenshot
 
-- Listing carriers
-- Adding carriers
-- Editing carriers
-- Deleting carriers
-- Customer group filtering
-- Store view assignment
-- Min/Max validation
-- Sort order
-- Enable/Disable
+![Carrier Grid](https://github.com/user-attachments/assets/6f5a17a4-307d-422a-97df-c763d830f654)
+
+### Add Carrier Screenshot
+
+![Add Carrier](https://github.com/user-attachments/assets/01a39481-eadf-41b5-a42f-edad0bdbe350)
+
+### Edit Carrier Screenshot
+
+![Edit Carrier](https://github.com/user-attachments/assets/6d5dbd7c-bc76-4c60-85de-dcf99711ba05)
+
+### Checkout Screenshot
+
+![Checkout](https://github.com/user-attachments/assets/3afa537f-cf85-443e-a2f2-359a73870b42)
 
 Supported fields:
 
@@ -196,12 +200,9 @@ Supported fields:
 
 ### Webhook Signature
 
-1. Stores → Configuration → Adobe Services → Webhooks
-2. Enable Digital Signature
-3. Generate key pair
-4. Add public key to `.env`
+Configure signature in Commerce and place public key in `.env`.
 
-### SaaS Webhooks Required
+### SaaS Webhooks
 
 | Event | Topic |
 |-------|--------|
@@ -209,51 +210,29 @@ Supported fields:
 
 ### PaaS Webhook Module
 
-PaaS requires a Magento module located at:
-
 ```
 app/code/Fulcrum/CustomShippingWebhook
 ```
 
-It registers:
+Registers:
 
-- Topic: `plugin.sales.api.order_management.shipping_methods`
-- Endpoint: `FulcrumCustomShippingMenu/shipping-methods`
-
-Enable:
-
-```bash
-bin/magento module:enable Fulcrum_CustomShippingWebhook
-bin/magento setup:upgrade
-bin/magento cache:flush
-```
+- Topic: plugin.sales.api.order_management.shipping_methods
+- Endpoint: FulcrumCustomShippingMenu/shipping-methods
 
 ---
 
 ## Deploy
 
-Build:
-
 ```bash
 aio app build
-```
-
-Deploy:
-
-```bash
 aio app deploy
-```
-
-List actions:
-
-```bash
 aio runtime action list
 ```
 
-Admin UI SDK registration URL:
+Admin UI SDK registration:
 
 ```
-https://<runtime-namespace>.adobeioruntime.net/api/v1/web/admin-ui-sdk/registration
+https://<namespace>.adobeioruntime.net/api/v1/web/admin-ui-sdk/registration
 ```
 
 ---
@@ -261,10 +240,6 @@ https://<runtime-namespace>.adobeioruntime.net/api/v1/web/admin-ui-sdk/registrat
 ## Actions
 
 ### add-carrier
-
-Creates or updates a custom carrier.
-
-Request example:
 
 ```json
 {
@@ -295,55 +270,105 @@ Response:
 { "carrier_id": "FULCRUM_dynamic" }
 ```
 
+Response:
+
+```json
+{
+  "status": "success",
+  "message": "Carrier removed"
+}
+```
+
 ### get-carriers
 
-Returns all configured carriers.
+```json
+[
+  {
+    "carrier_id": "FULCRUM_dynamic",
+    "enabled": true,
+    "min": 50.00,
+    "title": "Fulcrum Dynamic Shipping",
+    "hint": "Calculated based on cart value",
+    "stores": ["default"],
+    "customer_groups": ["0", "1"],
+    "sort_order": 10
+  }
+]
+```
 
 ### get-customer-groups
 
-Returns customer groups.
+```json
+[
+  { "id": "0", "name": "NOT LOGGED IN" },
+  { "id": "1", "name": "General" },
+  { "id": "2", "name": "Wholesale" }
+]
+```
 
 ### get-stores
 
-Returns store views.
+```json
+[
+  { "id": "default", "name": "Default Store View" },
+  { "id": "us_store", "name": "US Store" }
+]
+```
 
 ### registration
 
-Bootstraps Admin UI extension.
-
-### commerce
-
-Shared module for Adobe Commerce API integration.
-
-### utils.js
-
-Validation, formatting and logging helpers.
+```json
+{
+  "status": "registered",
+  "message": "Fulcrum Custom Shipping registered"
+}
+```
 
 ### shipping-methods/index.js
-
-Handles shipping rate calculation and returns rates to Commerce.
-
-Example:
 
 ```json
 {
   "rateRequest": {
-    "address": { "country_id": "US", "postcode": "90210" },
-    "totals": { "grand_total": 199.99 }
+    "store_code": "default",
+    "website_code": "base",
+    "customer_group_id": "general",
+    "grand_total": 120,
+    "items_qty": 3,
+    "items": [
+      { "sku": "A", "qty": 1, "price": 20, "row_total": 20 },
+      { "sku": "B", "qty": 2, "price": 30, "row_total": 60 }
+    ],
+    "shipping_address": {
+      "city": "Mar del Plata",
+      "postcode": "7600",
+      "country_id": "AR"
+    }
   }
+}
+```
+
+Response:
+
+```json
+{
+  "rates": [
+    {
+      "carrier_code": "FULCRUM_dynamic",
+      "method_code": "dynamic",
+      "carrier_title": "Fulcrum Shipping",
+      "method_title": "Dynamic Rate",
+      "amount": 12.34,
+      "price_incl_tax": 12.34,
+      "available": true,
+      "extension_attributes": { "estimated_delivery": "2-5 business days" }
+    }
+  ]
 }
 ```
 
 ---
 
 ## Errors
-
-- 400: Bad Request
-- 401: Invalid token
-- 404: Carrier not found
-- 409: Duplicate carrier code
-
-Sample:
 
 ```json
 {
@@ -358,16 +383,14 @@ Sample:
 
 ## Changelog
 
-- 1.0.0 Initial release  
-- 1.1.0 Added PaaS compatibility  
-- 1.2.0 Updated to @adobe/uix-sdk 1.0.3  
-- 1.3.0 Added maxVersion in app.config.yaml  
-- 1.4.0 Unified OAuth credentials for runtime actions
+- Added SaaS + PaaS compatibility
+- Added Admin UI screenshots
+- Added all payloads for all actions
+- Added webhook module documentation
+- Updated to @adobe/uix-sdk 1.0.3
 
 ---
 
 ## Support
 
 info@fulcrumdigital.com
-
-© 2025 Fulcrum Digital. Adobe, Adobe Commerce, and Magento are trademarks of Adobe Inc.
