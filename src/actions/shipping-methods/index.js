@@ -359,7 +359,7 @@ async function main(params) {
       // Price base (unit)
       const unitPrice = (pickNumber(custom.price, custom.value) !== null)
         ? pickNumber(custom.price, custom.value)
-        : DEFAULT_PRICE;
+        : 0;
 
       // Legacy-proven price_per_item behavior (snake o camel)
       const ppiRaw = (custom.price_per_item !== undefined) ? custom.price_per_item : custom.pricePerItem;
