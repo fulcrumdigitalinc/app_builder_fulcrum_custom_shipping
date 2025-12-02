@@ -266,7 +266,7 @@ async function main(params) {
     const cartItemCount = extractCartItemCount(request);
     logger.info(`cartTotal = ${cartTotal}; cartItemCount = ${cartItemCount}`);
 
-    const COMMERCE_BASE_URL = params; // SaaS/PaaS base URL for adobe-commerce client
+    const { COMMERCE_BASE_URL } = params; // SaaS/PaaS base URL for adobe-commerce client
     if (!COMMERCE_BASE_URL) return ok([errorOp('Missing COMMERCE_BASE_URL')]);
     // Init Files (non-fatal)
     let files = null;
