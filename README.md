@@ -9,6 +9,14 @@ https://docs.google.com/document/d/1auF_ueMR5jAqGKTSOknEOorKmBvLELc3Pk2f__5a_XU/
 Extensibility framework overview:  
 https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/
 
+## Storefront
+
+Compatible with Adobe Commerce Storefront
+
+https://experienceleague.adobe.com/developer/commerce/storefront/
+
+https://github.com/hlxsites/aem-boilerplate-commerce
+
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)
@@ -184,7 +192,7 @@ Supported fields:
 ## Webhooks
 
 ### Webhook Signature
-Enable signature verification in Commerce and place the public key in `COMMERCE_WEBHOOKS_PUBLIC_KEY`.
+Enable signature verification in Commerce (Configs -> Adobe Services -> Webhooks) and place the public key in env file as `COMMERCE_WEBHOOKS_PUBLIC_KEY`.
 
 ### SaaS Webhooks
 | Event | Topic |

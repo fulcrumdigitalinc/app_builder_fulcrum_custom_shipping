@@ -11,7 +11,7 @@ governing permissions and limitations under the License.
 */
 
 const { Config } = require('@adobe/aio-sdk').Core;
-const fetch = require('node-fetch');
+const fetch = (...args) => { if (typeof global.fetch === "function") { return global.fetch(...args); } throw new Error("global.fetch not available"); };
 
 // get action url
 const namespace = Config.get('runtime.namespace');
