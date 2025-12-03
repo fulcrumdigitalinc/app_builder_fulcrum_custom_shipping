@@ -199,6 +199,111 @@ Registers:
 - Topic: `plugin.sales.api.order_management.shipping_methods`
 - Endpoint: `FulcrumCustomShippingMenu/shipping-methods`
 
+Module structure (expected on PaaS):
+```
+app/code/Fulcrum/CustomShippingWebhook/
+├── registration.php
+├── etc/
+│   ├── module.xml
+│   ├── webhooks.xml           # maps topics to the runtime endpoint
+│   ├── events.xml             # optional: event observers if needed
+│   └── di.xml                 # optional: preferences/injections
+└── Controller/Webhook/ShippingMethods/Index.php  # forwards to the runtime URL
+```
+The reference module lives in `app/code/Fulcrum/CustomShippingWebhook/`; update `etc/webhooks.xml` with your runtime host so the topic `plugin.sales.api.order_management.shipping_methods` routes to `/api/v1/web/application/shipping-methods` in App Builder.
+
+Reference code (drop into your Commerce PaaS instance):
+
+`app/code/Fulcrum/CustomShippingWebhook/registration.php`
+```php
+<?php
+/**
+ * Fulcrum Custom Shipping Webhook module registration.
+ */
+
+use Magento\Framework\Component\ComponentRegistrar;
+
+ComponentRegistrar::register(
+    ComponentRegistrar::MODULE,
+    'Fulcrum_CustomShippingWebhook',
+    __DIR__
+);
+```
+
+`app/code/Fulcrum/CustomShippingWebhook/etc/module.xml`
+```xml
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Module/etc/module.xsd">
+    <module name="Fulcrum_CustomShippingWebhook" setup_version="1.0.0" />
+</config>
+```
+
+`app/code/Fulcrum/CustomShippingWebhook/etc/webhooks.xml`
+```xml
+<?xml version="1.0"?>
+<webhooks xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="urn:magento:module:Adobe_Webhooks:etc/webhooks.xsd">
+    <topics>
+        <topic name="plugin.sales.api.order_management.shipping_methods">
+            <endpoints>
+                <!-- Replace {{runtime_url}} with your runtime host, e.g. https://<namespace>.adobeioruntime.net -->
+                <endpoint url="{{runtime_url}}/api/v1/web/application/shipping-methods"/>
+            </endpoints>
+        </topic>
+    </topics>
+</webhooks>
+```
+
+`app/code/Fulcrum/CustomShippingWebhook/etc/frontend/routes.xml`
+```xml
+<?xml version="1.0"?>
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:App/etc/routes.xsd">
+    <route id="fulcrumcustomshippingwebhook" frontName="fulcrumcustomshippingwebhook">
+        <module name="Fulcrum_CustomShippingWebhook" />
+    </route>
+</routes>
+```
+
+`app/code/Fulcrum/CustomShippingWebhook/Controller/Webhook/ShippingMethods/Index.php`
+```php
+<?php
+/**
+ * Fallback controller for the Custom Shipping webhook.
+ * Webhooks should call the runtime endpoint configured in etc/webhooks.xml.
+ */
+namespace Fulcrum\CustomShippingWebhook\Controller\Webhook\ShippingMethods;
+
+use Magento\Framework\App\Action\Action;
+use Magento\Framework\App\Action\Context;
+use Magento\Framework\App\Action\HttpPostActionInterface;
+use Magento\Framework\Controller\Result\JsonFactory;
+
+class Index extends Action implements HttpPostActionInterface
+{
+    /**
+     * @var JsonFactory
+     */
+    private $resultJsonFactory;
+
+    public function __construct(Context $context, JsonFactory $resultJsonFactory)
+    {
+        parent::__construct($context);
+        $this->resultJsonFactory = $resultJsonFactory;
+    }
+
+    public function execute()
+    {
+        $result = $this->resultJsonFactory->create();
+        return $result->setData([
+            'ok' => true,
+            'message' => 'Use Commerce Webhooks to reach /api/v1/web/application/shipping-methods in App Builder.',
+        ]);
+    }
+}
+```
+
 ---
 
 ## Deploy
