@@ -16,14 +16,6 @@ function errorResponse(statusCode, message, logger) {
   };
 }
 
-function stringParameters(params = {}) {
-  const clone = JSON.parse(JSON.stringify(params));
-  if (clone.__ow_headers && typeof clone.__ow_headers.authorization === 'string') {
-    clone.__ow_headers.authorization = '<hidden>';
-  }
-  return JSON.stringify(clone);
-}
-
 function getMissingKeys(obj, required) {
   return (required || []).filter((r) => {
     const segments = r.split('.');
@@ -51,17 +43,7 @@ function checkMissingRequestInputs(params, requiredParams = [], requiredHeaders 
   return errorMessage;
 }
 
-function getBearerToken(params = {}) {
-  const auth = params.__ow_headers?.authorization;
-  if (typeof auth !== 'string') return undefined;
-  const prefix = 'Bearer ';
-  if (!auth.startsWith(prefix)) return undefined;
-  return auth.slice(prefix.length);
-}
-
 module.exports = {
   errorResponse,
-  stringParameters,
   checkMissingRequestInputs,
-  getBearerToken,
 };
