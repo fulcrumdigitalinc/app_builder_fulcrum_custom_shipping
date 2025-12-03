@@ -1,29 +1,24 @@
 # Fulcrum Custom Shipping (OOPE)
 
-Welcome to **Fulcrum Custom Shipping** (`fulcrum_custom_shipping`), a custom **Out-Of-Process Extension (OOPE)** shipping method for **Adobe Commerce SaaS/PaaS**.
-
-This project implements a **carrier grid** powered by **Adobe App Builder**, **Commerce Webhooks**, and the **Admin UI SDK**, without installing modules in the Magento backend for SaaS environments. It provides a configurable shipping method managed through the Admin UI and consumed by the Checkout Starter Kit or any custom Storefront.
-
-For more details on the extensibility framework:  
-https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/
+Fulcrum Custom Shipping (`fulcrum_custom_shipping`) delivers an out-of-process shipping carrier for Adobe Commerce that works in both SaaS and PaaS. It uses App Builder runtime actions, Commerce Webhooks, and the Admin UI SDK to manage carrier configuration without installing backend code for SaaS tenants, while remaining compatible with PaaS via Commerce integrations.
 
 User Guide:  
-https://docs.google.com/document/d/1rrvvXR9E-XeHFnKwxMwG-y_zwaCshOMrmH4D9_HcqRg/edit
-
+https://docs.google.com/document/d/1rrvvXR9E-XeHFnKwxMwG-y_zwaCshOMrmH4D9_HcqRg/edit  
 Detailed Description Guide:  
-https://docs.google.com/document/d/1auF_ueMR5jAqGKTSOknEOorKmBvLELc3Pk2f__5a_XU/edit
-
----
+https://docs.google.com/document/d/1auF_ueMR5jAqGKTSOknEOorKmBvLELc3Pk2f__5a_XU/edit  
+Extensibility framework overview:  
+https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/
 
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)
-- [Install the required modules to configure the shipping extensions PaaS Only](#install-the-required-modules-to-configure-the-shipping-extensions-paas-only)
+- [Install the required modules to configure the shipping extensions (PaaS Only)](#install-the-required-modules-to-configure-the-shipping-extensions-paas-only)
 - [Create an App Builder Project](#create-an-app-builder-project)
 - [Initialize the Project](#initialize-the-project)
 - [Environment Variables](#environment-variables)
 - [Architecture](#architecture)
 - [Carrier Grid Configuration](#carrier-grid-configuration)
+- [Configuration](#configuration)
 - [Webhooks](#webhooks)
 - [Deploy](#deploy)
 - [Actions](#actions)
@@ -41,7 +36,19 @@ https://docs.google.com/document/d/1auF_ueMR5jAqGKTSOknEOorKmBvLELc3Pk2f__5a_XU/
   ```bash
   npm install -g @adobe/aio-cli
   ```
-- Access to Adobe Developer Console with App Builder enabled.
+- Access to Adobe Developer Console with App Builder enabled
+
+### SaaS Installation Steps
+- Create the App Builder project (below) and configure IMS OAuth Server-to-Server.
+- Populate SaaS environment variables in `.env` (see [Environment Variables](#environment-variables)).
+- Deploy the app; no Commerce module installation is required.
+
+### PaaS Installation Steps
+- Install the Commerce modules listed below.
+- Configure Commerce Integration credentials or IMS OAuth credentials.
+- If using IMS on PaaS, enable the IMS module as described in https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/connect/#adobe-identity-management-service-ims.
+- Populate PaaS environment variables in `.env`.
+- Configure Commerce Webhooks in your instance and deploy the app.
 
 ---
 
@@ -61,45 +68,22 @@ https://developer.adobe.com/commerce/extensibility/webhooks/installation/
 ## Create an App Builder Project
 
 1. Open Adobe Developer Console: https://console.adobe.io/
-2. Create a new project.
-3. Add App Builder.
-4. Enable:
-   - Runtime
-   - Actions
-   - I/O Events
-   - I/O Management API
-5. Create a workspace (Stage / Production).
-6. Add OAuth Server-to-Server integration.
-7. Set the OAuth scope:
+2. Create a new project and add **App Builder**.
+3. Enable required services/APIs: Runtime, I/O Events, I/O Management API, Admin UI SDK.
+4. Add an **OAuth Server-to-Server** credential with the scope:
    ```
    commerce.accs
    ```
+5. Create workspaces (Stage/Production) and note the project/workspace IDs for deployment.
 
 ---
 
 ## Initialize the Project
 
-Clone the repository and run:
-
 ```bash
 aio app init
 npm install
-```
-
-Select:
-
-- Use existing project → Fulcrum Custom Shipping
-- Workspace → Stage
-
-Verify:
-
-```bash
-aio app use -w Stage
-```
-
-Build check:
-
-```bash
+aio app use -w <Workspace>
 aio app build
 ```
 
@@ -107,39 +91,36 @@ aio app build
 
 ## Environment Variables
 
-Create a `.env` file:
+Create a `.env` file from `env.dist` and fill what you need.
 
+### Shared
 ```env
 COMMERCE_BASE_URL=
 COMMERCE_WEBHOOKS_PUBLIC_KEY=
+LOG_LEVEL=info
+AIO_CLI_ENV=prod
+```
 
+### SaaS (IMS OAuth)
+```env
 OAUTH_CLIENT_ID=
 OAUTH_CLIENT_SECRET=
 OAUTH_TECHNICAL_ACCOUNT_ID=
 OAUTH_TECHNICAL_ACCOUNT_EMAIL=
-OAUTH_SCOPES="commerce.accs"
 OAUTH_IMS_ORG_ID=
+OAUTH_SCOPES=["commerce.accs"]
+```
 
+### PaaS (Commerce Integration)
+```env
 COMMERCE_CONSUMER_KEY=
 COMMERCE_CONSUMER_SECRET=
 COMMERCE_ACCESS_TOKEN=
 COMMERCE_ACCESS_TOKEN_SECRET=
-
-AIO_RUNTIME_NAMESPACE=
-LOG_LEVEL=debug
 ```
 
-### SaaS Example
-
-```
-COMMERCE_BASE_URL=https://na1.api.commerce.adobe.com/<tenant_id>/
-```
-
-### PaaS Example
-
-```
-COMMERCE_BASE_URL=https://yourcommerce.com/rest/default/
-```
+SaaS example: `COMMERCE_BASE_URL=https://na1.api.commerce.adobe.com/<tenant_id>/`  
+PaaS example: `COMMERCE_BASE_URL=https://yourcommerce.com/rest/default/`
 
 ---
 
@@ -150,7 +131,7 @@ Components:
 - Admin UI SDK extension (Carrier Grid)
 - App Builder Runtime Actions
 - Commerce Webhooks
-- aio-lib-commerce client
+- aio-lib-files storage for per-carrier customization JSON
 - PaaS Magento Webhook module
 - Checkout integration (shipping rates)
 
@@ -165,19 +146,15 @@ Commerce Webhooks → Runtime Actions → Carrier Storage → Admin UI Grid → 
 ## Carrier Grid Configuration
 
 ### Carrier Grid Screenshot
-
 ![Carrier Grid](https://github.com/user-attachments/assets/6f5a17a4-307d-422a-97df-c763d830f654)
 
 ### Add Carrier Screenshot
-
 ![Add Carrier](https://github.com/user-attachments/assets/01a39481-eadf-41b5-a42f-edad0bdbe350)
 
 ### Edit Carrier Screenshot
-
 ![Edit Carrier](https://github.com/user-attachments/assets/6d5dbd7c-bc76-4c60-85de-dcf99711ba05)
 
 ### Checkout Screenshot
-
 ![Checkout](https://github.com/user-attachments/assets/3afa537f-cf85-443e-a2f2-359a73870b42)
 
 Supported fields:
@@ -196,28 +173,31 @@ Supported fields:
 
 ---
 
+## Configuration
+
+- SaaS: configure IMS OAuth credentials, create Commerce Webhook topics, and deploy the app; no Commerce module install required.
+- PaaS: install the Commerce modules, configure integration credentials (or IMS per the IMS module doc), configure webhook topics, and deploy.
+- Admin UI SDK registration is handled by the `registration` action.
+
+---
+
 ## Webhooks
 
 ### Webhook Signature
-
-Configure signature in Commerce and place public key in `.env`.
+Enable signature verification in Commerce and place the public key in `COMMERCE_WEBHOOKS_PUBLIC_KEY`.
 
 ### SaaS Webhooks
-
 | Event | Topic |
 |-------|--------|
 | Shipping Rates | plugin.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates |
 
 ### PaaS Webhook Module
-
 ```
 app/code/Fulcrum/CustomShippingWebhook
 ```
-
 Registers:
-
-- Topic: plugin.sales.api.order_management.shipping_methods
-- Endpoint: FulcrumCustomShippingMenu/shipping-methods
+- Topic: `plugin.sales.api.order_management.shipping_methods`
+- Endpoint: `FulcrumCustomShippingMenu/shipping-methods`
 
 ---
 
@@ -229,103 +209,15 @@ aio app deploy
 aio runtime action list
 ```
 
-Admin UI SDK registration:
-
-```
-https://<namespace>.adobeioruntime.net/api/v1/web/admin-ui-sdk/registration
-```
+Admin UI SDK registration endpoint: `/api/v1/web/admin-ui-sdk/registration`  
+Fulcrum Custom Shipping menu actions live under `/api/v1/web/FulcrumCustomShippingMenu/*`
 
 ---
 
 ## Actions
 
-### add-carrier
-
-```json
-{
-  "carrier_code": "FULCRUM_dynamic",
-  "enabled": true,
-  "min": 50.00,
-  "title": "Fulcrum Dynamic Shipping",
-  "hint": "Calculated based on cart value",
-  "stores": ["default", "us_store"],
-  "customer_groups": ["0", "1"],
-  "sort_order": 10
-}
-```
-
-Response:
-
-```json
-{
-  "status": "success",
-  "message": "Carrier saved",
-  "carrier_id": "FULCRUM_dynamic"
-}
-```
-
-### delete-carrier
-
-```json
-{ "carrier_id": "FULCRUM_dynamic" }
-```
-
-Response:
-
-```json
-{
-  "status": "success",
-  "message": "Carrier removed"
-}
-```
-
-### get-carriers
-
-```json
-[
-  {
-    "carrier_id": "FULCRUM_dynamic",
-    "enabled": true,
-    "min": 50.00,
-    "title": "Fulcrum Dynamic Shipping",
-    "hint": "Calculated based on cart value",
-    "stores": ["default"],
-    "customer_groups": ["0", "1"],
-    "sort_order": 10
-  }
-]
-```
-
-### get-customer-groups
-
-```json
-[
-  { "id": "0", "name": "NOT LOGGED IN" },
-  { "id": "1", "name": "General" },
-  { "id": "2", "name": "Wholesale" }
-]
-```
-
-### get-stores
-
-```json
-[
-  { "id": "default", "name": "Default Store View" },
-  { "id": "us_store", "name": "US Store" }
-]
-```
-
-### registration
-
-```json
-{
-  "status": "registered",
-  "message": "Fulcrum Custom Shipping registered"
-}
-```
-
-### shipping-methods/index.js
-
+### shipping-methods (webhook responder)
+- **Request:** raw webhook body (base64 in `__ow_body`) with rate request payload:
 ```json
 {
   "rateRequest": {
@@ -338,45 +230,155 @@ Response:
       { "sku": "A", "qty": 1, "price": 20, "row_total": 20 },
       { "sku": "B", "qty": 2, "price": 30, "row_total": 60 }
     ],
-    "shipping_address": {
-      "city": "Mar del Plata",
-      "postcode": "7600",
-      "country_id": "AR"
+    "shipping_address": { "city": "Mar del Plata", "postcode": "7600", "country_id": "AR" }
+  }
+}
+```
+- **Response:** JSON Patch operations consumed by Commerce Webhooks. Example success operation:
+```json
+[
+  {
+    "op": "add",
+    "path": "result",
+    "value": {
+      "carrier_code": "FULCRUM_dynamic",
+      "carrier_title": "Fulcrum Shipping",
+      "method": "dynamic",
+      "method_title": "Dynamic Rate",
+      "amount": 12.34,
+      "price": 12.34,
+      "cost": 12.34,
+      "available": true,
+      "additional_data": []
+    }
+  }
+]
+```
+- **Auth:** `require-adobe-auth: true`; supports both IMS OAuth and Commerce integration credentials.
+
+### add-carrier
+- **Request:** JSON body or `carrier` param:
+```json
+{
+  "carrier": {
+    "code": "FULCRUM_dynamic",
+    "title": "Fulcrum Dynamic Shipping",
+    "stores": ["default", "us_store"],
+    "countries": ["US","CA"],
+    "sort_order": 10,
+    "active": true,
+    "tracking_available": true,
+    "shipping_labels_available": false,
+    "variables": {
+      "method_name": "Dynamic",
+      "value": 12.34,
+      "minimum": 0,
+      "maximum": 200,
+      "customer_groups": [0,1],
+      "price_per_item": true,
+      "stores": ["default"]
     }
   }
 }
 ```
-
-Response:
-
+- **Response:**
 ```json
 {
-  "rates": [
+  "ok": true,
+  "method": "POST",
+  "carrier": { "code": "FULCRUM_dynamic", "title": "Fulcrum Dynamic Shipping", "active": true },
+  "commerce": "{...raw Commerce API response...}",
+  "receivedCustom": { "method_name": "Dynamic", "value": 12.34, "minimum": 0, "maximum": 200, "customer_groups": [0,1], "price_per_item": true, "stores": ["default"] },
+  "savedCustom": { "...": "merged custom JSON persisted in aio-lib-files" }
+}
+```
+- **Auth:** IMS OAuth or Commerce integration; writes custom JSON to `carrier_custom_<code>.json`.
+
+### get-carriers
+- **Request:** no body; uses credentials to call Commerce and read custom JSON per carrier.
+- **Response:**
+```json
+{
+  "ok": true,
+  "carriers": [
     {
-      "carrier_code": "FULCRUM_dynamic",
-      "method_code": "dynamic",
-      "carrier_title": "Fulcrum Shipping",
-      "method_title": "Dynamic Rate",
-      "amount": 12.34,
-      "price_incl_tax": 12.34,
-      "available": true,
-      "extension_attributes": { "estimated_delivery": "2-5 business days" }
+      "code": "FULCRUM_dynamic",
+      "title": "Fulcrum Dynamic Shipping",
+      "stores": ["default"],
+      "countries": ["US","CA"],
+      "sort_order": 10,
+      "active": true,
+      "tracking_available": true,
+      "shipping_labels_available": false,
+      "method_name": "Dynamic",
+      "value": 12.34,
+      "minimum": 0,
+      "maximum": 200,
+      "customer_groups": [0,1],
+      "price_per_item": true
     }
   ]
 }
 ```
+
+### delete-carrier
+- **Request:** JSON body `{ "code": "<carrier_code>" }` or query `?code=<carrier_code>`.
+- **Response:**
+```json
+{
+  "ok": true,
+  "code": "FULCRUM_dynamic",
+  "deletedInCommerce": true,
+  "stateDeleted": true,
+  "delRaw": "\"Deleted FULCRUM_dynamic\""
+}
+```
+- Deletes Commerce carrier and related custom JSON file(s).
+
+### get-customer-groups
+- **Request:** none (requires COMMERCE_BASE_URL and auth).
+- **Response:**
+```json
+{ "items": [ { "id": 0, "code": "NOT LOGGED IN" }, { "id": 1, "code": "General" } ] }
+```
+
+### get-stores
+- **Request:** none (requires COMMERCE_BASE_URL and auth).
+- **Response:**
+```json
+{ "items": [ { "id": "default", "name": "Default Store View" }, { "id": "us_store", "name": "US Store" } ] }
+```
+
+### commerce-rest-api
+- **Request:** Pass-through Commerce REST call (method/path/body) for Admin UI tooling. Requires credentials.
+- **Response:** Commerce API JSON response wrapped with `{ success, message }`.
+
+### registration
+- **Request:** none (runtime-provided context).
+- **Response:** `{ "status": "registered", "message": "Fulcrum Custom Shipping registered" }`
 
 ---
 
 ## Errors
 
+Webhook handler errors surface as a JSON Patch with a single `error` entry; UI actions respond with `{ ok: false, message }` and appropriate status codes. Example webhook error payload:
 ```json
-{
-  "status": "fail",
-  "errors": [
-    { "field": "min", "message": "Must be >= 0" }
-  ]
-}
+[
+  {
+    "op": "add",
+    "path": "result",
+    "value": {
+      "carrier_code": "FULCRUM",
+      "carrier_title": "Fulcrum Custom Shipping (ERROR)",
+      "method": "fulcrum_error",
+      "method_title": "Webhook verify failed",
+      "amount": 0,
+      "price": 0,
+      "cost": 0,
+      "additional_data": [{ "key": "source", "value": "shipping-methods error" }]
+    }
+  }
+]
 ```
 
 ---
@@ -385,7 +387,7 @@ Response:
 
 - Added SaaS + PaaS compatibility
 - Added Admin UI screenshots
-- Added all payloads for all actions
+- Added payloads and request/response examples for all actions
 - Added webhook module documentation
 - Updated to @adobe/uix-sdk 1.0.3
 

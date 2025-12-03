@@ -6,7 +6,7 @@ const { context } = require('@adobe/aio-lib-ims');
 
 const keyMap = {
   client_id: 'OAUTH_CLIENT_ID',
-  client_secrets: 'OAUTH_CLIENT_SECRETS',
+  client_secrets: 'OAUTH_CLIENT_SECRET',
   technical_account_email: 'OAUTH_TECHNICAL_ACCOUNT_EMAIL',
   technical_account_id: 'OAUTH_TECHNICAL_ACCOUNT_ID',
   scopes: 'OAUTH_SCOPES',
