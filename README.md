@@ -2,10 +2,12 @@
 
 Fulcrum Custom Shipping (`fulcrum_custom_shipping`) delivers an out-of-process shipping carrier for Adobe Commerce that works in both SaaS and PaaS. It uses App Builder runtime actions, Commerce Webhooks, and the Admin UI SDK to manage carrier configuration without installing backend code for SaaS tenants, while remaining compatible with PaaS via Commerce integrations.
 
-User Guide:  
-https://docs.google.com/document/d/1rrvvXR9E-XeHFnKwxMwG-y_zwaCshOMrmH4D9_HcqRg/edit  
-Detailed Description Guide:  
-https://docs.google.com/document/d/1auF_ueMR5jAqGKTSOknEOorKmBvLELc3Pk2f__5a_XU/edit  
+User Guide (PDF download):  
+[Download User Guide](https://docs.google.com/document/d/1rrvvXR9E-XeHFnKwxMwG-y_zwaCshOMrmH4D9_HcqRg/export?format=pdf)  
+
+Detailed Description Guide (PDF download):  
+[Download Detailed Description Guide](https://docs.google.com/document/d/1auF_ueMR5jAqGKTSOknEOorKmBvLELc3Pk2f__5a_XU/export?format=pdf)  
+
 Extensibility framework overview:  
 https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/
 
@@ -77,7 +79,7 @@ https://developer.adobe.com/commerce/extensibility/webhooks/installation/
 
 1. Open Adobe Developer Console: https://console.adobe.io/
 2. Create a new project and add **App Builder**.
-3. Enable required services/APIs: Runtime, I/O Events, I/O Management API, Admin UI SDK.
+3. Enable required services/APIs: **Runtime, I/O Management API, Admin UI SDK**.
 4. Add an **OAuth Server-to-Server** credential with the scope:
    ```
    commerce.accs
@@ -220,8 +222,6 @@ app/code/Fulcrum/CustomShippingWebhook/
 ```
 The reference module lives in `app/code/Fulcrum/CustomShippingWebhook/`; update `etc/webhooks.xml` with your runtime host so the topic `plugin.sales.api.order_management.shipping_methods` routes to `/api/v1/web/application/shipping-methods` in App Builder.
 
-Reference code (drop into your Commerce PaaS instance):
-
 `app/code/Fulcrum/CustomShippingWebhook/registration.php`
 ```php
 <?php
@@ -255,7 +255,7 @@ ComponentRegistrar::register(
     <topics>
         <topic name="plugin.sales.api.order_management.shipping_methods">
             <endpoints>
-                <!-- Replace {{runtime_url}} with your runtime host, e.g. https://<namespace>.adobeioruntime.net -->
+                <!-- Replace {{runtime_url}} with your runtime host -->
                 <endpoint url="{{runtime_url}}/api/v1/web/application/shipping-methods"/>
             </endpoints>
         </topic>
@@ -443,7 +443,7 @@ Fulcrum Custom Shipping menu actions live under `/api/v1/web/FulcrumCustomShippi
   "code": "FULCRUM_dynamic",
   "deletedInCommerce": true,
   "stateDeleted": true,
-  "delRaw": "\"Deleted FULCRUM_dynamic\""
+  "delRaw": ""Deleted FULCRUM_dynamic""
 }
 ```
 - Deletes Commerce carrier and related custom JSON file(s).
