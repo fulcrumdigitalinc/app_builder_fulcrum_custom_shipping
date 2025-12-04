@@ -209,14 +209,12 @@ function CarrierDialog({
               errorMessage={codeError}
               isDisabled={mode === 'edit'}
               width="100%"
-              UNSAFE_style={{ minHeight: '96px' }}
             />
             <TextField
               label="Title *"
               value={form.title}
               onChange={v => onChange({ title: v })}
               width="100%"
-              UNSAFE_style={{ minHeight: '96px' }}
             />
           </Grid>
 
