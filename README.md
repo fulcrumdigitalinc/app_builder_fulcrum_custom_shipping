@@ -443,7 +443,7 @@ Fulcrum Custom Shipping menu actions live under `/api/v1/web/FulcrumCustomShippi
   "code": "FULCRUM_dynamic",
   "deletedInCommerce": true,
   "stateDeleted": true,
-  "delRaw": ""Deleted FULCRUM_dynamic""
+  "delRaw": "Deleted FULCRUM_dynamic"
 }
 ```
 - Deletes Commerce carrier and related custom JSON file(s).
