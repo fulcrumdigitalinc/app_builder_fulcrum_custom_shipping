@@ -185,8 +185,8 @@ Supported fields:
 
 ## Configuration
 
-- SaaS: configure IMS OAuth credentials, create Commerce Webhook ## plugin.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates ##, and deploy the app; no Commerce module install required.
-- PaaS: install the Commerce modules, configure integration credentials (or IMS per the IMS module doc), configure webhook topics, and deploy.
+- SaaS: configure IMS OAuth credentials, create Commerce Webhook plugin.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates, and deploy the app; no Commerce module install required.
+- PaaS: install the Commerce modules, configure integration credentials (or IMS per the IMS module doc), create webhook module, and deploy.
 - Admin UI SDK registration is handled by the `registration` action.
 
 ---
@@ -201,7 +201,7 @@ Enable signature verification in Commerce (Configs -> Adobe Services -> Webhooks
 |-------|--------|
 | Shipping Rates | plugin.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates |
 
-### PaaS Webhook Module
+### PaaS Webhook Module structure
 ```
 app/code/Fulcrum/CustomShippingWebhook
 ```
