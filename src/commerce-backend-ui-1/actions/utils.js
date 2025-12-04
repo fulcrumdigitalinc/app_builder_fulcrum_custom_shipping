@@ -88,22 +88,7 @@ function errorResponse(statusCode, message, logger) {
   };
 }
 
-async function getAccessToken($clientId,$clientSecret,$scope) {
-    const url = 'https://ims-na1.adobelogin.com/ims/token/v3';
-    const body = new URLSearchParams({
-      grant_type: 'client_credentials',
-      client_id: $clientId,
-      client_secret: $clientSecret,
-      scope: $scope
-    });
-    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
-    const j = await r.json();
-    if (!r.ok || j.error) throw new Error(`Failed to get access token → ${JSON.stringify(j)}`);
-    return j.access_token;
-  }
-
 module.exports = {
   errorResponse,
-  checkMissingRequestInputs,
-  getAccessToken
+  checkMissingRequestInputs
 };
