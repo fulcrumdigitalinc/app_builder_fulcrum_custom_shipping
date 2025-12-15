@@ -2,6 +2,6 @@ packages:
   application:
     actions:
       shipping-methods:
-        function: actions/shipping-methods/index.js
+        function: src/actions/shipping-methods/index.js
         web: yes
-        runtime: nodejs:18
+        runtime: nodejs:22
