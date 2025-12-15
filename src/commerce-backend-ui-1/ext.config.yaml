@@ -3,9 +3,6 @@ operations:
     - type: web
       impl: index.html
 
-hooks:
-  pre-app-build: hooks/pre-app-build.js
-
 actions: actions
 web: web-src
 
@@ -154,6 +151,8 @@ runtimeManifest:
             OAUTH_IMS_ORG_ID: $OAUTH_IMS_ORG_ID
 
     application:
+      hooks:
+        pre-app-build: hooks/pre-app-build.js
       license: Apache-2.0
       actions:
         shipping-methods:
