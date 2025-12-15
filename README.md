@@ -220,7 +220,7 @@ Supported fields:
 - Enable and click Digital Signature Configuration Regenerate Key Pair
 - Add the generated to your as .env [as the same format](https://developer.adobe.com/commerce/extensibility/webhooks/signature-verification/#verify-the-signature-in-the-app-builder-action)
 ```
-COMMERCE_WEBHOOKS_PUBLIC_KEY= -----BEGIN PUBLIC KEY-----"
+COMMERCE_WEBHOOKS_PUBLIC_KEY= "-----BEGIN PUBLIC KEY-----
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 -----END PUBLIC KEY-----"
 ```
@@ -232,23 +232,27 @@ inwebhook methodshipping_rate_repository.get_rates System > Webhooks > Webhooks 
 For PaaS: Refer to . Replace the placeholder URL with the actual URL of your deployed actionwebhooks.xml
 ```
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_AdobeCommerceWebhooks:etc
-/webhooks.xsd">
-<method name="plugin.magento.out_of_process_shipping_methods.api.
-shipping_rate_repository.get_rates" type="after">
-<hooks>
-<batch name="fulcurum_shipping">
-<hook name="add_shipping_rates_fulcrum" url="https://<your_app_builder>.
-runtime.adobe.io/api/v1/web/application/shipping-methods" method="POST" timeout="5000"
-softTimeout="1000" priority="100" required="true">
-<fields>
-<field name="rateRequest" />
-</fields>
-</hook>
-</batch>
-</hooks>
-</method>
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_AdobeCommerceWebhooks:etc/webhooks.xsd">
+    <method name="plugin.magento.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates"
+            type="after">
+        <hooks>
+            <batch name="fulcrum_shipping">
+                <hook name="add_shipping_rates_fulcrum"
+                      url="https://&lt;your_app_builder&gt;.runtime.adobe.io/api/v1/web/application/shipping-methods"
+                      method="POST"
+                      timeout="5000"
+                      softTimeout="1000"
+                      priority="100"
+                      required="true">
+                    <fields>
+                        <field name="rateRequest" />
+                    </fields>
+                </hook>
+            </batch>
+        </hooks>
+    </method>
 </config>
+
 ```
 
 ## Deploy
