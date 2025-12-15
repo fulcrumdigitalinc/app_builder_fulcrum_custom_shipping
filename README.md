@@ -77,14 +77,26 @@ https://developer.adobe.com/commerce/extensibility/webhooks/installation/
 
 ## Create an App Builder Project
 
-1. Open Adobe Developer Console: https://console.adobe.io/
-2. Create a new project and add **App Builder**.
-3. Enable required services/APIs: **Runtime, I/O Management API, Admin UI SDK**.
-4. Add an **OAuth Server-to-Server** credential with the scope:
-   ```
-   commerce.accs
-   ```
-5. Create workspaces (Stage/Production) and note the project/workspace IDs for deployment.
+- Log in to [Adobe Developer Console](https://console.adobe.io/) and choose the desired organization.
+- Click **Create new project from template** and select **App Builder** (Set up templated project).
+- Specify a project title and app name. Check **Include Runtime with each workspace**.
+- Initialize the downloaded code and connect the project/workspace:
+  ```bash
+  aio login
+  aio console org select
+  aio console project select
+  aio console workspace select
+  aio app use --merge
+  ```
+- Add required services:
+  ```bash
+  aio app add service
+  ```
+  Select **I/O Management API** and **Adobe Commerce as a Cloud Service** (if connecting to ACCS).
+- Deploy App Builder actions:
+  ```bash
+  aio app deploy
+  ```
 
 ---
 
@@ -140,9 +152,8 @@ Components:
 
 - Admin UI SDK extension (Carrier Grid)
 - App Builder Runtime Actions
-- Commerce Webhooks
+- Commerce Webhooks (SaaS and PaaS) using `plugin.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates`
 - aio-lib-files storage for per-carrier customization JSON
-- PaaS Magento Webhook module
 - Checkout integration (shipping rates)
 
 Flow:
@@ -185,8 +196,8 @@ Supported fields:
 
 ## Configuration
 
-- SaaS: configure IMS OAuth credentials, create Commerce Webhook plugin.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates, and deploy the app; no Commerce module install required.
-- PaaS: install the Commerce modules, configure integration credentials (or IMS per the IMS module doc), create webhook module, and deploy.
+- SaaS: configure IMS OAuth credentials, create a Commerce Webhook subscription to `plugin.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates`, and deploy the app; no Commerce module install required.
+- PaaS: install the Commerce modules, configure integration credentials (or IMS per the IMS module doc), and create a webhook subscription (UI or `etc/webhooks.xml`) to `plugin.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates`, then deploy.
 - Admin UI SDK registration is handled by the `registration` action.
 
 ---
@@ -194,125 +205,40 @@ Supported fields:
 ## Webhooks
 
 ### Webhook Signature
-Enable signature verification in Commerce (Configs -> Adobe Services -> Webhooks) and place the public key in env file as `COMMERCE_WEBHOOKS_PUBLIC_KEY`.
+- In Adobe Commerce, go to **Stores > Settings > Configuration > Adobe Services > Webhooks**.
+- Enable and click **Digital Signature Configuration > Regenerate Key Pair**.
+- Add the generated public key to your `.env` as `COMMERCE_WEBHOOKS_PUBLIC_KEY`, for example:
+  ```env
+  COMMERCE_WEBHOOKS_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+-----END PUBLIC KEY-----"
+  ```
 
-### SaaS Webhooks
-| Event | Topic |
-|-------|--------|
-| Shipping Rates | plugin.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates |
-
-### PaaS Webhook Module structure
-```
-app/code/Fulcrum/CustomShippingWebhook
-```
-Registers:
-- Topic: `plugin.sales.api.order_management.shipping_methods`
-- Endpoint: `FulcrumCustomShippingMenu/shipping-methods`
-
-Module structure (expected on PaaS):
-```
-app/code/Fulcrum/CustomShippingWebhook/
-├── registration.php
-├── etc/
-│   ├── module.xml
-│   ├── webhooks.xml           # maps topics to the runtime endpoint
-│   ├── events.xml             # optional: event observers if needed
-│   └── di.xml                 # optional: preferences/injections
-└── Controller/Webhook/ShippingMethods/Index.php  # forwards to the runtime URL
-```
-The reference module lives in `app/code/Fulcrum/CustomShippingWebhook/`; update `etc/webhooks.xml` with your runtime host so the topic `plugin.sales.api.order_management.shipping_methods` routes to `/api/v1/web/application/shipping-methods` in App Builder.
-
-`app/code/Fulcrum/CustomShippingWebhook/registration.php`
-```php
-<?php
-/**
- * Fulcrum Custom Shipping Webhook module registration.
- */
-
-use Magento\Framework\Component\ComponentRegistrar;
-
-ComponentRegistrar::register(
-    ComponentRegistrar::MODULE,
-    'Fulcrum_CustomShippingWebhook',
-    __DIR__
-);
-```
-
-`app/code/Fulcrum/CustomShippingWebhook/etc/module.xml`
-```xml
-<?xml version="1.0"?>
-<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:noNamespaceSchemaLocation="urn:magento:framework:Module/etc/module.xsd">
-    <module name="Fulcrum_CustomShippingWebhook" setup_version="1.0.0" />
-</config>
-```
-
-`app/code/Fulcrum/CustomShippingWebhook/etc/webhooks.xml`
-```xml
-<?xml version="1.0"?>
-<webhooks xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xsi:noNamespaceSchemaLocation="urn:magento:module:Adobe_Webhooks:etc/webhooks.xsd">
-    <topics>
-        <topic name="plugin.sales.api.order_management.shipping_methods">
-            <endpoints>
-                <!-- Replace {{runtime_url}} with your runtime host -->
-                <endpoint url="{{runtime_url}}/api/v1/web/application/shipping-methods"/>
-            </endpoints>
-        </topic>
-    </topics>
-</webhooks>
-```
-
-`app/code/Fulcrum/CustomShippingWebhook/etc/frontend/routes.xml`
-```xml
-<?xml version="1.0"?>
-<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:noNamespaceSchemaLocation="urn:magento:framework:App/etc/routes.xsd">
-    <route id="fulcrumcustomshippingwebhook" frontName="fulcrumcustomshippingwebhook">
-        <module name="Fulcrum_CustomShippingWebhook" />
-    </route>
-</routes>
-```
-
-`app/code/Fulcrum/CustomShippingWebhook/Controller/Webhook/ShippingMethods/Index.php`
-```php
-<?php
-/**
- * Fallback controller for the Custom Shipping webhook.
- * Webhooks should call the runtime endpoint configured in etc/webhooks.xml.
- */
-namespace Fulcrum\CustomShippingWebhook\Controller\Webhook\ShippingMethods;
-
-use Magento\Framework\App\Action\Action;
-use Magento\Framework\App\Action\Context;
-use Magento\Framework\App\Action\HttpPostActionInterface;
-use Magento\Framework\Controller\Result\JsonFactory;
-
-class Index extends Action implements HttpPostActionInterface
-{
-    /**
-     * @var JsonFactory
-     */
-    private $resultJsonFactory;
-
-    public function __construct(Context $context, JsonFactory $resultJsonFactory)
-    {
-        parent::__construct($context);
-        $this->resultJsonFactory = $resultJsonFactory;
-    }
-
-    public function execute()
-    {
-        $result = $this->resultJsonFactory->create();
-        return $result->setData([
-            'ok' => true,
-            'message' => 'Use Commerce Webhooks to reach /api/v1/web/application/shipping-methods in App Builder.',
-        ]);
-    }
-}
-```
-
----
+### Create Webhooks
+- **SaaS:** Create a webhook subscription in **System > Webhooks > Webhooks Subscriptions** for `plugin.magento.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates`, pointing to `/api/v1/web/application/shipping-methods` in your runtime.
+- **PaaS:** Use the same topic `plugin.magento.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates`, either via the Commerce UI or by adding to `etc/webhooks.xml`:
+  ```xml
+  <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_AdobeCommerceWebhooks:etc/webhooks.xsd">
+      <method name="plugin.magento.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates" type="after">
+          <hooks>
+              <batch name="fulcrum_shipping">
+                  <hook name="add_shipping_rates_fulcrum"
+                        url="https://<your_app_builder>.runtime.adobe.io/api/v1/web/application/shipping-methods"
+                        method="POST"
+                        timeout="5000"
+                        softTimeout="1000"
+                        priority="100"
+                        required="true">
+                      <fields>
+                          <field name="rateRequest"/>
+                      </fields>
+                  </hook>
+              </batch>
+          </hooks>
+      </method>
+  </config>
+  ```
 
 ## Deploy
 
