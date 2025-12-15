@@ -24,13 +24,12 @@ https://github.com/hlxsites/aem-boilerplate-commerce
 - [Prerequisites](#prerequisites)
 - [Install the required modules to configure the shipping extensions (PaaS Only)](#install-the-required-modules-to-configure-the-shipping-extensions-paas-only)
 - [Create an App Builder Project](#create-an-app-builder-project)
-- [Initialize the Project](#initialize-the-project)
 - [Environment Variables](#environment-variables)
 - [Architecture](#architecture)
-- [Carrier Grid Configuration](#carrier-grid-configuration)
 - [Configuration](#configuration)
 - [Webhooks](#webhooks)
 - [Deploy](#deploy)
+- [Carrier Grid Configuration](#carrier-grid-configuration)
 - [Actions](#actions)
 - [Errors](#errors)
 - [Changelog](#changelog)
@@ -108,7 +107,6 @@ Deploy the App Builder actions using the Adobe I/O CLI:
 ```bash
 aio app deploy
 ```
-
 ---
 
 ## Environment Variables
@@ -161,37 +159,6 @@ Flow:
 ```
 Commerce Webhooks → Runtime Actions → Carrier Storage → Admin UI Grid → Checkout
 ```
-
----
-
-## Carrier Grid Configuration
-
-### Carrier Grid Screenshot
-![Carrier Grid](https://github.com/user-attachments/assets/6f5a17a4-307d-422a-97df-c763d830f654)
-
-### Add Carrier Screenshot
-![Add Carrier](https://github.com/user-attachments/assets/01a39481-eadf-41b5-a42f-edad0bdbe350)
-
-### Edit Carrier Screenshot
-![Edit Carrier](https://github.com/user-attachments/assets/6d5dbd7c-bc76-4c60-85de-dcf99711ba05)
-
-### Checkout Screenshot
-![Checkout](https://github.com/user-attachments/assets/3afa537f-cf85-443e-a2f2-359a73870b42)
-
-Supported fields:
-
-| Field | Description |
-|-------|-------------|
-| carrier_code | Method identifier |
-| title | Display title |
-| hint | Additional info |
-| enabled | Global enable |
-| min | Minimum allowed total |
-| value | Base price or dynamic price |
-| stores | List of store views |
-| customer_groups | Access control |
-| sort_order | Sorting |
-
 ---
 
 ## Configuration
@@ -261,6 +228,37 @@ aio runtime action list
 
 Admin UI SDK registration endpoint: `/api/v1/web/admin-ui-sdk/registration`  
 Fulcrum Custom Shipping menu actions live under `/api/v1/web/FulcrumCustomShippingMenu/*`
+
+---
+
+## Carrier Grid Configuration
+
+### Carrier Grid Screenshot
+![Carrier Grid](https://github.com/user-attachments/assets/6f5a17a4-307d-422a-97df-c763d830f654)
+
+### Add Carrier Screenshot
+![Add Carrier](https://github.com/user-attachments/assets/01a39481-eadf-41b5-a42f-edad0bdbe350)
+
+### Edit Carrier Screenshot
+![Edit Carrier](https://github.com/user-attachments/assets/6d5dbd7c-bc76-4c60-85de-dcf99711ba05)
+
+### Checkout Screenshot
+![Checkout](https://github.com/user-attachments/assets/3afa537f-cf85-443e-a2f2-359a73870b42)
+
+Supported fields:
+
+| Field | Description |
+|-------|-------------|
+| carrier_code | Method identifier |
+| title | Display title |
+| hint | Additional info |
+| enabled | Global enable |
+| min | Minimum allowed total |
+| value | Base price or dynamic price |
+| stores | List of store views |
+| customer_groups | Access control |
+| sort_order | Sorting |
+
 
 ---
 
