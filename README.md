@@ -78,10 +78,10 @@ https://developer.adobe.com/commerce/extensibility/webhooks/installation/
 
 Create an App Builder project in Developer Console
 
-1- Log in to the Adobe Developer Console and select the desired organization from the dropdown menu in the top-right corner.
-2- Click **Create new project from template**.
-3- Select **App Builder**. The **Set up templated project** page displays.
-4- Specify a project title and app name. Mark the checkbox **Include Runtime with each workspace**.
+- Log in to the Adobe Developer Console and select the desired organization from the dropdown menu in the top-right corner.
+- Click **Create new project from template**.
+- Select **App Builder**. The **Set up templated project** page displays.
+- Specify a project title and app name. Mark the checkbox **Include Runtime with each workspace**.
 
 Initialize App Builder project
 
