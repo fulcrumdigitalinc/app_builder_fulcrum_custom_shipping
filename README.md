@@ -111,17 +111,6 @@ aio app deploy
 
 ---
 
-## Initialize the Project
-
-```bash
-aio app init
-npm install
-aio app use -w <Workspace>
-aio app build
-```
-
----
-
 ## Environment Variables
 
 Create a `.env` file from `env.dist` and fill what you need.
