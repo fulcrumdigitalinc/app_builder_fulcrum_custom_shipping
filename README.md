@@ -215,17 +215,22 @@ Supported fields:
 ## Webhooks
 
 1. Prepare Webhook Signature
-2. In Adobe Commerce, go to Stores > Settings > Configuration > Adobe Services > Webhooks
-3. Enable and click Digital Signature Configuration Regenerate Key Pair
-4. Add the generated to your as :Public Key .env the same format
+
+a. In Adobe Commerce, go to Stores > Settings > Configuration > Adobe Services > Webhooks
+b. Enable and click Digital Signature Configuration Regenerate Key Pair
+c. Add the generated to your as .env [as the same format](https://developer.adobe.com/commerce/extensibility/webhooks/signature-verification/#verify-the-signature-in-the-app-builder-action)
+```
 COMMERCE_WEBHOOKS_PUBLIC_KEY= -----BEGIN PUBLIC KEY-----"
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 -----END PUBLIC KEY-----"
-Create Webhooks2.
+```
+
+2. Create Webhooks.
 After deploying your App Builder actions, with the following actions:create the webhooks
 For SaaS: Register your action to plugin.magento.out_of_process_shipping_methods.api.
 inwebhook methodshipping_rate_repository.get_rates System > Webhooks > Webhooks Subscriptions.
 For PaaS: Refer to . Replace the placeholder URL with the actual URL of your deployed actionwebhooks.xml
+```
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_AdobeCommerceWebhooks:etc
 /webhooks.xsd">
@@ -244,7 +249,7 @@ softTimeout="1000" priority="100" required="true">
 </hooks>
 </method>
 </config>
-
+```
 
 ## Deploy
 
