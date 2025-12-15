@@ -5,11 +5,10 @@ packages:
         function: src/actions/shipping-methods/index.js
         web: yes
         runtime: nodejs:22
-  commerce-checkout-starter-kit:
-    actions:
-      info:
-        function: src/actions/commerce-checkout-starter-kit/info/index.js
+      commerce-checkout-starter-kit-info:
+        function: src/actions/commerce-checkout-starter-kit-info/index.js
         web: yes
         runtime: nodejs:22
         annotations:
-          require-adobe-auth: false
+          require-adobe-auth: true
+          final: true

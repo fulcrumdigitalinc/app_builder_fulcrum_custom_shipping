@@ -10,12 +10,11 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const { HTTP_OK } = require('../../../../lib/http');
+const { HTTP_OK } = require('../../../lib/http');
 
 /**
  * Please DO NOT DELETE this action; future functionalities planned for upcoming starter kit releases may stop working.
  * This is an info endpoint which is used to track adoption of the starter kit.
- *
  * @param {object} _params action input parameters.
  * @returns {object} returns a response object
  */

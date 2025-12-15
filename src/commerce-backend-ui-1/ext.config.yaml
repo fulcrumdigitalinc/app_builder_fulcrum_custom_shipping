@@ -153,19 +153,6 @@ runtimeManifest:
             OAUTH_SCOPES: $OAUTH_SCOPES
             OAUTH_IMS_ORG_ID: $OAUTH_IMS_ORG_ID
 
-    commerce-checkout-starter-kit:
-      license: Apache-2.0
-      actions:
-        info:
-          function: ../actions/commerce-checkout-starter-kit/info/index.js
-          web: 'yes'
-          runtime: 'nodejs:22'
-          inputs:
-            LOG_LEVEL: info
-          annotations:
-            require-adobe-auth: false
-            final: true
-
     application:
       license: Apache-2.0
       actions:
@@ -203,4 +190,11 @@ runtimeManifest:
           annotations:
             require-adobe-auth: true
             raw-http: true
+            final: true
+        commerce-checkout-starter-kit-info:
+          function: ../actions/commerce-checkout-starter-kit-info/index.js
+          web: 'yes'
+          runtime: 'nodejs:22'
+          annotations:
+            require-adobe-auth: true
             final: true
