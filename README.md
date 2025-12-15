@@ -225,11 +225,18 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 -----END PUBLIC KEY-----"
 ```
 
-2. Create Webhooks.
-After deploying your App Builder actions [create the webhooks](https://developer.adobe.com/commerce/extensibility/webhooks/create-webhooks/) with the following actions:
-For SaaS: Register your action to plugin.magento.out_of_process_shipping_methods.api.
-inwebhook methodshipping_rate_repository.get_rates System > Webhooks > Webhooks Subscriptions.
-For PaaS: Refer to . Replace the placeholder URL with the actual URL of your deployed actionwebhooks.xml
+2. Create Webhooks
+
+After deploying your App Builder actions, create the webhooks using the following configuration:
+
+- **For SaaS**:  
+  Register your action to  
+  `plugin.magento.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates`  
+  webhook method in **System → Webhooks → Webhook Subscriptions**.
+
+- **For PaaS**:  
+  Refer to `webhooks.xml`. Replace the placeholder URL with the actual URL of your deployed App Builder action.
+
 ```
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_AdobeCommerceWebhooks:etc/webhooks.xsd">
@@ -238,7 +245,7 @@ For PaaS: Refer to . Replace the placeholder URL with the actual URL of your dep
         <hooks>
             <batch name="fulcrum_shipping">
                 <hook name="add_shipping_rates_fulcrum"
-                      url="https://&lt;your_app_builder&gt;.runtime.adobe.io/api/v1/web/application/shipping-methods"
+                      url="https://<your_app_builder>.runtime.adobe.io/api/v1/web/application/shipping-methods"
                       method="POST"
                       timeout="5000"
                       softTimeout="1000"
@@ -270,7 +277,7 @@ Fulcrum Custom Shipping menu actions live under `/api/v1/web/FulcrumCustomShippi
 
 ## Actions
 
-### shipping-methods (webhook responder)
+### shipping-methods
 - **Request:** raw webhook body (base64 in `__ow_body`) with rate request payload:
 ```json
 {
