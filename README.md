@@ -216,9 +216,9 @@ Supported fields:
 
 1. Prepare Webhook Signature
 
-a. In Adobe Commerce, go to Stores > Settings > Configuration > Adobe Services > Webhooks
-b. Enable and click Digital Signature Configuration Regenerate Key Pair
-c. Add the generated to your as .env [as the same format](https://developer.adobe.com/commerce/extensibility/webhooks/signature-verification/#verify-the-signature-in-the-app-builder-action)
+- In Adobe Commerce, go to Stores > Settings > Configuration > Adobe Services > Webhooks
+- Enable and click Digital Signature Configuration Regenerate Key Pair
+- Add the generated to your as .env [as the same format](https://developer.adobe.com/commerce/extensibility/webhooks/signature-verification/#verify-the-signature-in-the-app-builder-action)
 ```
 COMMERCE_WEBHOOKS_PUBLIC_KEY= -----BEGIN PUBLIC KEY-----"
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
