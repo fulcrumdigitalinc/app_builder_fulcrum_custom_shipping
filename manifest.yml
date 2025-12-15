@@ -1,7 +1,0 @@
-packages:
-  application:
-    actions:
-      shipping-methods:
-        function: actions/shipping-methods/index.js
-        web: yes
-        runtime: nodejs:18

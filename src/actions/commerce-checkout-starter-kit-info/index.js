@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 /*
 Copyright 2025 Adobe. All rights reserved.
 This file is licensed to you under the Apache License, Version 2.0 (the "License");
@@ -12,22 +10,16 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { Core } from "@adobe/aio-sdk";
+const { HTTP_OK } = require('../../../lib/http');
 
-import { main as syncOAuthCredentials } from "../scripts/sync-oauth-credentials.js";
-
-const logger = Core.Logger("hooks/pre-app-build", {
-  level: process.env.LOG_LEVEL || "info",
-});
-
-const hook = async () => {
-  await syncOAuthCredentials();
-  logger.info("Done");
-};
-
-// Run if executed directly (as a script)
-if (import.meta.url === `file://${process.argv[1]}`) {
-  hook();
+/**
+ * Please DO NOT DELETE this action; future functionalities planned for upcoming starter kit releases may stop working.
+ * This is an info endpoint which is used to track adoption of the starter kit.
+ * @param {object} _params action input parameters.
+ * @returns {object} returns a response object
+ */
+function main(_params) {
+  return { statusCode: HTTP_OK };
 }
 
-export default hook;
+exports.main = main;

@@ -5,7 +5,6 @@
   "private": true,
   "description": "Fulcrum Custom Shipping (OOPE) Admin UI + App Builder Runtime",
   "license": "Apache-2.0",
-
   "dependencies": {
     "@adobe/aio-lib-files": "^4.1.2",
     "@adobe/aio-lib-ims": "^8.1.1",
@@ -13,6 +12,7 @@
     "@adobe/exc-app": "^1.4.20",
     "@adobe/react-spectrum": "^3.45.0",
     "@adobe/uix-guest": "1.0.3",
+    "@react-aria/visually-hidden": "^3.8.28",
     "core-js": "^3.47.0",
     "got": "11.8.6",
     "oauth-1.0a": "^2.2.6",
@@ -22,17 +22,15 @@
     "react-router-dom": "6.30.2",
     "regenerator-runtime": "^0.14.1"
   },
-
   "devDependencies": {
     "@babel/core": "^7.24.7",
     "@babel/eslint-parser": "^7.28.5",
     "@babel/preset-react": "^7.24.7",
-
+    "@types/jest": "^30.0.0",
     "dotenv": "^17.2.3",
-
     "eslint": "^8.57.1",
-    "eslint-config-standard": "^17.1.0",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-config-standard": "^17.1.0",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-jest": "^27.9.0",
     "eslint-plugin-jsdoc": "^48.11.0",
@@ -40,16 +38,12 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^6.0.0",
     "eslint-plugin-react": "^7.37.5",
-
     "jest": "^30.0.0",
-    "@types/jest": "^30.0.0",
-    "wait-for-expect": "^4.0.0",
-    "nock": "^14.0.10",
-
     "js-yaml": "^4.1.1",
-    "prettier": "^3.6.2"
+    "nock": "^14.0.10",
+    "prettier": "^3.6.2",
+    "wait-for-expect": "^4.0.0"
   },
-
   "scripts": {
     "test": "jest --runInBand ./test/carrier-lifecycle.test.js",
     "e2e": "jest --collectCoverage=false --testRegex ./e2e",
@@ -61,7 +55,6 @@
     "code:fix": "npm run format:fix && npm run lint:fix",
     "sync-oauth-credentials": "node -e \"require('./scripts/sync-oauth-credentials').main()\""
   },
-
   "engines": {
     "node": ">=22"
   }
