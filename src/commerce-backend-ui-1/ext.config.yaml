@@ -4,7 +4,7 @@ operations:
       impl: index.html
 
 hooks:
-  pre-app-build: ./hooks/pre-app-build.js
+  pre-app-build: hooks/pre-app-build.js
 
 actions: actions
 web: web-src
@@ -152,6 +152,19 @@ runtimeManifest:
             OAUTH_TECHNICAL_ACCOUNT_EMAIL: $OAUTH_TECHNICAL_ACCOUNT_EMAIL
             OAUTH_SCOPES: $OAUTH_SCOPES
             OAUTH_IMS_ORG_ID: $OAUTH_IMS_ORG_ID
+
+    commerce-checkout-starter-kit:
+      license: Apache-2.0
+      actions:
+        info:
+          function: ../actions/commerce-checkout-starter-kit/info/index.js
+          web: 'yes'
+          runtime: 'nodejs:22'
+          inputs:
+            LOG_LEVEL: info
+          annotations:
+            require-adobe-auth: false
+            final: true
 
     application:
       license: Apache-2.0
