@@ -214,15 +214,10 @@ Supported fields:
 ---
 ## Webhooks
 
-1.
-a.
-b.
-c.
-Documentation In the README, please update following things under the Configure Webhooks Section
-Prepare Webhook Signature
-In Adobe Commerce, go to Stores > Settings > Configuration > Adobe Services > Webhooks
-Enable and clickDigital Signature Configuration Regenerate Key Pair
-Add the generated to your as :Public Key .env the same format
+1. Prepare Webhook Signature
+2. In Adobe Commerce, go to Stores > Settings > Configuration > Adobe Services > Webhooks
+3. Enable and click Digital Signature Configuration Regenerate Key Pair
+4. Add the generated to your as :Public Key .env the same format
 COMMERCE_WEBHOOKS_PUBLIC_KEY= -----BEGIN PUBLIC KEY-----"
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 -----END PUBLIC KEY-----"
