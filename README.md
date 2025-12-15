@@ -78,14 +78,14 @@ https://developer.adobe.com/commerce/extensibility/webhooks/installation/
 
 Create an App Builder project in Developer Console
 
-- Log in to the Adobe Developer Console and select the desired organization from the dropdown menu in the top-right corner.
-- Click **Create new project from template**.
-- Select **App Builder**. The **Set up templated project** page displays.
-- Specify a project title and app name. Mark the checkbox **Include Runtime with each workspace**.
+1- Log in to the Adobe Developer Console and select the desired organization from the dropdown menu in the top-right corner.
+2- Click **Create new project from template**.
+3- Select **App Builder**. The **Set up templated project** page displays.
+4- Specify a project title and app name. Mark the checkbox **Include Runtime with each workspace**.
 
 Initialize App Builder project
 
-Navigate to the downloaded code and run:
+1. Navigate to the downloaded code and run:
 ```bash
 aio login
 aio console org select
@@ -94,7 +94,7 @@ aio console workspace select
 aio app use --merge
 ```
 
-Add required services to your project:
+2. Add required services to your project:
 ```bash
 aio app add service
 ```
@@ -102,7 +102,7 @@ Select the following from the list:
 - I/O Management API
 - Adobe Commerce as a Cloud Service (If connecting to Adobe Commerce as a Cloud Service)
 
-Deploy App Builder Actions:
+3. Deploy App Builder Actions:
 
 Deploy the App Builder actions using the Adobe I/O CLI:
 ```bash
