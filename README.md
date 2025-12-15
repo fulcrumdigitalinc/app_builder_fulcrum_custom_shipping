@@ -78,7 +78,7 @@ https://developer.adobe.com/commerce/extensibility/webhooks/installation/
 
 Create an App Builder project in Developer Console
 
-- Log in to the Adobe Developer Console and select the desired organization from the dropdown menu in the top-right corner.
+- Log in to the [Adobe Developer Console](https://console.adobe.io/) and select the desired organization from the dropdown menu in the top-right corner.
 - Click **Create new project from template**.
 - Select **App Builder**. The **Set up templated project** page displays.
 - Specify a project title and app name. Mark the checkbox **Include Runtime with each workspace**.
@@ -226,7 +226,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ```
 
 2. Create Webhooks.
-After deploying your App Builder actions, with the following actions:create the webhooks
+After deploying your App Builder actions [create the webhooks](https://developer.adobe.com/commerce/extensibility/webhooks/create-webhooks/) with the following actions:
 For SaaS: Register your action to plugin.magento.out_of_process_shipping_methods.api.
 inwebhook methodshipping_rate_repository.get_rates System > Webhooks > Webhooks Subscriptions.
 For PaaS: Refer to . Replace the placeholder URL with the actual URL of your deployed actionwebhooks.xml
