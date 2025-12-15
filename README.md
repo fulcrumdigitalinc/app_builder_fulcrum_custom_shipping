@@ -85,7 +85,7 @@ Create an App Builder project in Developer Console
 
 Initialize App Builder project
 
-1. Navigate to the downloaded code and run:
+## 1. Navigate to the downloaded code and run:
 ```bash
 aio login
 aio console org select
@@ -94,7 +94,7 @@ aio console workspace select
 aio app use --merge
 ```
 
-2. Add required services to your project:
+## 2. Add required services to your project:
 ```bash
 aio app add service
 ```
@@ -102,7 +102,7 @@ Select the following from the list:
 - I/O Management API
 - Adobe Commerce as a Cloud Service (If connecting to Adobe Commerce as a Cloud Service)
 
-3. Deploy App Builder Actions:
+## 3. Deploy App Builder Actions:
 
 Deploy the App Builder actions using the Adobe I/O CLI:
 ```bash
@@ -214,7 +214,7 @@ Supported fields:
 ---
 ## Webhooks
 
-1. Prepare Webhook Signature
+## 1. Prepare Webhook Signature
 
 - In Adobe Commerce, go to Stores > Settings > Configuration > Adobe Services > Webhooks
 - Enable and click Digital Signature Configuration Regenerate Key Pair
@@ -225,7 +225,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 -----END PUBLIC KEY-----"
 ```
 
-2. Create Webhooks
+## 2. Create Webhooks
 
 After deploying your App Builder actions, create the webhooks using the following configuration:
 
