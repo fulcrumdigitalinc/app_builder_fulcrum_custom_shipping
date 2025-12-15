@@ -74,29 +74,40 @@ Webhook module installation (PaaS):
 https://developer.adobe.com/commerce/extensibility/webhooks/installation/
 
 ---
-
 ## Create an App Builder Project
 
-- Log in to [Adobe Developer Console](https://console.adobe.io/) and choose the desired organization.
-- Click **Create new project from template** and select **App Builder** (Set up templated project).
-- Specify a project title and app name. Check **Include Runtime with each workspace**.
-- Initialize the downloaded code and connect the project/workspace:
-  ```bash
-  aio login
-  aio console org select
-  aio console project select
-  aio console workspace select
-  aio app use --merge
-  ```
-- Add required services:
-  ```bash
-  aio app add service
-  ```
-  Select **I/O Management API** and **Adobe Commerce as a Cloud Service** (if connecting to ACCS).
-- Deploy App Builder actions:
-  ```bash
-  aio app deploy
-  ```
+Create an App Builder project in Developer Console
+
+- Log in to the Adobe Developer Console and select the desired organization from the dropdown menu in the top-right corner.
+- Click **Create new project from template**.
+- Select **App Builder**. The **Set up templated project** page displays.
+- Specify a project title and app name. Mark the checkbox **Include Runtime with each workspace**.
+
+Initialize App Builder project
+
+Navigate to the downloaded code and run:
+```bash
+aio login
+aio console org select
+aio console project select
+aio console workspace select
+aio app use --merge
+```
+
+Add required services to your project:
+```bash
+aio app add service
+```
+Select the following from the list:
+- I/O Management API
+- Adobe Commerce as a Cloud Service (If connecting to Adobe Commerce as a Cloud Service)
+
+Deploy App Builder Actions:
+
+Deploy the App Builder actions using the Adobe I/O CLI:
+```bash
+aio app deploy
+```
 
 ---
 
@@ -201,44 +212,44 @@ Supported fields:
 - Admin UI SDK registration is handled by the `registration` action.
 
 ---
-
 ## Webhooks
 
-### Webhook Signature
-- In Adobe Commerce, go to **Stores > Settings > Configuration > Adobe Services > Webhooks**.
-- Enable and click **Digital Signature Configuration > Regenerate Key Pair**.
-- Add the generated public key to your `.env` as `COMMERCE_WEBHOOKS_PUBLIC_KEY`, for example:
-  ```env
-  COMMERCE_WEBHOOKS_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----
+1.
+a.
+b.
+c.
+Documentation In the README, please update following things under the Configure Webhooks Section
+Prepare Webhook Signature
+In Adobe Commerce, go to Stores > Settings > Configuration > Adobe Services > Webhooks
+Enable and clickDigital Signature Configuration Regenerate Key Pair
+Add the generated to your as :Public Key .env the same format
+COMMERCE_WEBHOOKS_PUBLIC_KEY= -----BEGIN PUBLIC KEY-----"
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 -----END PUBLIC KEY-----"
-  ```
+Create Webhooks2.
+After deploying your App Builder actions, with the following actions:create the webhooks
+For SaaS: Register your action to plugin.magento.out_of_process_shipping_methods.api.
+inwebhook methodshipping_rate_repository.get_rates System > Webhooks > Webhooks Subscriptions.
+For PaaS: Refer to . Replace the placeholder URL with the actual URL of your deployed actionwebhooks.xml
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_AdobeCommerceWebhooks:etc
+/webhooks.xsd">
+<method name="plugin.magento.out_of_process_shipping_methods.api.
+shipping_rate_repository.get_rates" type="after">
+<hooks>
+<batch name="fulcurum_shipping">
+<hook name="add_shipping_rates_fulcrum" url="https://<your_app_builder>.
+runtime.adobe.io/api/v1/web/application/shipping-methods" method="POST" timeout="5000"
+softTimeout="1000" priority="100" required="true">
+<fields>
+<field name="rateRequest" />
+</fields>
+</hook>
+</batch>
+</hooks>
+</method>
+</config>
 
-### Create Webhooks
-- **SaaS:** Create a webhook subscription in **System > Webhooks > Webhooks Subscriptions** for `plugin.magento.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates`, pointing to `/api/v1/web/application/shipping-methods` in your runtime.
-- **PaaS:** Use the same topic `plugin.magento.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates`, either via the Commerce UI or by adding to `etc/webhooks.xml`:
-  ```xml
-  <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_AdobeCommerceWebhooks:etc/webhooks.xsd">
-      <method name="plugin.magento.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates" type="after">
-          <hooks>
-              <batch name="fulcrum_shipping">
-                  <hook name="add_shipping_rates_fulcrum"
-                        url="https://<your_app_builder>.runtime.adobe.io/api/v1/web/application/shipping-methods"
-                        method="POST"
-                        timeout="5000"
-                        softTimeout="1000"
-                        priority="100"
-                        required="true">
-                      <fields>
-                          <field name="rateRequest"/>
-                      </fields>
-                  </hook>
-              </batch>
-          </hooks>
-      </method>
-  </config>
-  ```
 
 ## Deploy
 
