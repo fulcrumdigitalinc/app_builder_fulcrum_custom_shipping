@@ -83,7 +83,12 @@ Create an App Builder project in Developer Console
 
 Initialize App Builder project
 
-1. **Navigate to the downloaded code and run:**
+1. **Run NPM install**
+```bash
+npm install
+```
+
+2. **Navigate to the downloaded code and run:**
 ```bash
 aio login
 aio console org select
@@ -92,7 +97,7 @@ aio console workspace select
 aio app use --merge
 ```
 
-2. **Add required services to your project:**
+3. **Add required services to your project:**
 ```bash
 aio app add service
 ```
@@ -100,11 +105,7 @@ Select the following from the list:
 - I/O Management API
 - Adobe Commerce as a Cloud Service (If connecting to Adobe Commerce as a Cloud Service)
 
-3. **Run NPM install**
-```bash
-npm install
-```
-5. **Deploy App Builder Actions:**
+4. **Deploy App Builder Actions:**
 
 Deploy the App Builder actions using the Adobe I/O CLI:
 ```bash
