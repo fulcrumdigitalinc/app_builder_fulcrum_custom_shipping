@@ -190,7 +190,10 @@ runtimeManifest:
             require-adobe-auth: true
             raw-http: true
             final: true
-        commerce-checkout-starter-kit-info:
+    commerce-checkout-starter-kit:
+      license: Apache-2.0
+      actions:
+        info:
           function: ../actions/commerce-checkout-starter-kit-info/index.js
           web: 'yes'
           runtime: 'nodejs:22'
