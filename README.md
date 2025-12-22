@@ -65,7 +65,6 @@ https://github.com/hlxsites/aem-boilerplate-commerce
 
 ```bash
 composer require magento/module-out-of-process-shipping-methods --with-dependencies
-composer update magento/commerce-eventing --with-dependencies
 composer require "magento/commerce-backend-sdk": ">=3.0"
 ```
 
@@ -84,7 +83,12 @@ Create an App Builder project in Developer Console
 
 Initialize App Builder project
 
-1. **Navigate to the downloaded code and run:**
+1. **Run NPM install**
+```bash
+npm install
+```
+
+2. **Navigate to the downloaded code and run:**
 ```bash
 aio login
 aio console org select
@@ -93,7 +97,7 @@ aio console workspace select
 aio app use --merge
 ```
 
-2. **Add required services to your project:**
+3. **Add required services to your project:**
 ```bash
 aio app add service
 ```
@@ -101,7 +105,7 @@ Select the following from the list:
 - I/O Management API
 - Adobe Commerce as a Cloud Service (If connecting to Adobe Commerce as a Cloud Service)
 
-3. **Deploy App Builder Actions:**
+4. **Deploy App Builder Actions:**
 
 Deploy the App Builder actions using the Adobe I/O CLI:
 ```bash
@@ -164,8 +168,8 @@ Commerce Webhooks → Runtime Actions → Carrier Storage → Admin UI Grid → 
 ## Configuration
 
 - SaaS: configure IMS OAuth credentials, create a Commerce Webhook subscription to `plugin.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates`, and deploy the app; no Commerce module install required.
-- PaaS: install the Commerce modules, configure integration credentials (or IMS per the IMS module doc), and create a webhook subscription (UI or `etc/webhooks.xml`) to `plugin.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates`, then deploy.
-- Admin UI SDK registration is handled by the `registration` action.
+- PaaS: install the Commerce modules, configure integration credentials (or IMS per the IMS module doc), and create a [webhook xml](#webhooks) to `plugin.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates`, then deploy.
+- Admin UI SDK registration is handled by the `registration` action. [Configure Admin](https://developer.adobe.com/commerce/extensibility/admin-ui-sdk/configuration/)
 
 ---
 ## Webhooks
@@ -188,10 +192,23 @@ After deploying your App Builder actions, create the webhooks using the followin
 - **For SaaS**:  
   Register your action to  
   `plugin.magento.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates`  
-  webhook method in **System → Webhooks → Webhook Subscriptions**.
+  webhook method in **System → Webhooks → Webhook Subscriptions**. Configure the **Developer Console OAuth** credentials for the subscription (per the [Webhook guide](https://developer.adobe.com/commerce/extensibility/webhooks/create-webhooks/#configure-developer-console-oauth)) so Commerce includes the required Authorization headers when calling the `shipping-methods` action.
+
+  When configuring the webhook subscription in **Adobe Commerce SaaS**, the following
+**Hook Headers** must be configured to authenticate requests sent to App Builder
+actions with `require-adobe-auth: true`.
+
+Configure these headers in  
+**System → Webhooks → Webhook Subscriptions → Edit Hook → Hook Headers**
+
+| Name | Value |
+|-----|-------|
+| Authorization | `Bearer {ims_token}` |
+| x-gw-ims-org-id | `<your_org_id>@AdobeOrg` |
+
 
 - **For PaaS**:  
-  Refer to `webhooks.xml`. Replace the placeholder URL with the actual URL of your deployed App Builder action.
+  Refer to `webhooks.xml`. Replace the placeholder URL with the actual URL of your deployed App Builder action. Configure Developer Console OAuth as documented here: https://developer.adobe.com/commerce/extensibility/webhooks/create-webhooks/#configure-developer-console-oauth.
 
 ```
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -207,6 +224,11 @@ After deploying your App Builder actions, create the webhooks using the followin
                       softTimeout="1000"
                       priority="100"
                       required="true">
+                    <developerConsoleOauth>
+                        <clientId>your_developer_console_client_id</clientId>
+                        <clientSecret>your_developer_console_client_secret</clientSecret>
+                        <orgId>your_org_id@AdobeOrg</orgId>
+                    </developerConsoleOauth>
                     <fields>
                         <field name="rateRequest" />
                     </fields>
