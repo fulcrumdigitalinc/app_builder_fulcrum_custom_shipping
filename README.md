@@ -188,10 +188,10 @@ After deploying your App Builder actions, create the webhooks using the followin
 - **For SaaS**:  
   Register your action to  
   `plugin.magento.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates`  
-  webhook method in **System → Webhooks → Webhook Subscriptions**.
+  webhook method in **System → Webhooks → Webhook Subscriptions**. Configure the **Developer Console OAuth** credentials for the subscription (per the [Webhook guide](https://developer.adobe.com/commerce/extensibility/webhooks/create-webhooks/#configure-developer-console-oauth)) so Commerce includes the required Authorization headers when calling the `shipping-methods` action.
 
 - **For PaaS**:  
-  Refer to `webhooks.xml`. Replace the placeholder URL with the actual URL of your deployed App Builder action.
+  Refer to `webhooks.xml`. Replace the placeholder URL with the actual URL of your deployed App Builder action. Configure Developer Console OAuth as documented here: https://developer.adobe.com/commerce/extensibility/webhooks/create-webhooks/#configure-developer-console-oauth.
 
 ```
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -207,6 +207,11 @@ After deploying your App Builder actions, create the webhooks using the followin
                       softTimeout="1000"
                       priority="100"
                       required="true">
+                    <developerConsoleOauth>
+                        <clientId>your_developer_console_client_id</clientId>
+                        <clientSecret>your_developer_console_client_secret</clientSecret>
+                        <orgId>your_org_id@AdobeOrg</orgId>
+                    </developerConsoleOauth>
                     <fields>
                         <field name="rateRequest" />
                     </fields>
