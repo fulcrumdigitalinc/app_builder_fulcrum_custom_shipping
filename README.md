@@ -65,7 +65,6 @@ https://github.com/hlxsites/aem-boilerplate-commerce
 
 ```bash
 composer require magento/module-out-of-process-shipping-methods --with-dependencies
-composer update magento/commerce-eventing --with-dependencies
 composer require "magento/commerce-backend-sdk": ">=3.0"
 ```
 
@@ -101,7 +100,11 @@ Select the following from the list:
 - I/O Management API
 - Adobe Commerce as a Cloud Service (If connecting to Adobe Commerce as a Cloud Service)
 
-3. **Deploy App Builder Actions:**
+3. **Run NPM install**
+```bash
+npm install
+```
+5. **Deploy App Builder Actions:**
 
 Deploy the App Builder actions using the Adobe I/O CLI:
 ```bash
@@ -164,7 +167,7 @@ Commerce Webhooks → Runtime Actions → Carrier Storage → Admin UI Grid → 
 ## Configuration
 
 - SaaS: configure IMS OAuth credentials, create a Commerce Webhook subscription to `plugin.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates`, and deploy the app; no Commerce module install required.
-- PaaS: install the Commerce modules, configure integration credentials (or IMS per the IMS module doc), and create a webhook subscription (UI or `etc/webhooks.xml`) to `plugin.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates`, then deploy.
+- PaaS: install the Commerce modules, configure integration credentials (or IMS per the IMS module doc), and create a [webhook xml](#webhooks) to `plugin.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates`, then deploy.
 - Admin UI SDK registration is handled by the `registration` action.
 
 ---
