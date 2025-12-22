@@ -168,7 +168,7 @@ Commerce Webhooks → Runtime Actions → Carrier Storage → Admin UI Grid → 
 
 - SaaS: configure IMS OAuth credentials, create a Commerce Webhook subscription to `plugin.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates`, and deploy the app; no Commerce module install required.
 - PaaS: install the Commerce modules, configure integration credentials (or IMS per the IMS module doc), and create a [webhook xml](#webhooks) to `plugin.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates`, then deploy.
-- Admin UI SDK registration is handled by the `registration` action.
+- Admin UI SDK registration is handled by the `registration` action. [Configure Admin](https://developer.adobe.com/commerce/extensibility/admin-ui-sdk/configuration/)
 
 ---
 ## Webhooks
