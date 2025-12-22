@@ -194,6 +194,19 @@ After deploying your App Builder actions, create the webhooks using the followin
   `plugin.magento.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates`  
   webhook method in **System → Webhooks → Webhook Subscriptions**. Configure the **Developer Console OAuth** credentials for the subscription (per the [Webhook guide](https://developer.adobe.com/commerce/extensibility/webhooks/create-webhooks/#configure-developer-console-oauth)) so Commerce includes the required Authorization headers when calling the `shipping-methods` action.
 
+  When configuring the webhook subscription in **Adobe Commerce SaaS**, the following
+**Hook Headers** must be configured to authenticate requests sent to App Builder
+actions with `require-adobe-auth: true`.
+
+Configure these headers in  
+**System → Webhooks → Webhook Subscriptions → Edit Hook → Hook Headers**
+
+| Name | Value |
+|-----|-------|
+| Authorization | `Bearer {ims_token}` |
+| x-gw-ims-org-id | `<your_org_id>@AdobeOrg` |
+
+
 - **For PaaS**:  
   Refer to `webhooks.xml`. Replace the placeholder URL with the actual URL of your deployed App Builder action. Configure Developer Console OAuth as documented here: https://developer.adobe.com/commerce/extensibility/webhooks/create-webhooks/#configure-developer-console-oauth.
 
