@@ -188,6 +188,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 2. **Create Webhooks**
 
 See [Webhooks Documentation](https://developer.adobe.com/commerce/extensibility/webhooks/create-webhooks/)
+
 After deploying your App Builder actions, create the webhooks using the following configuration:
 
 - **For SaaS**:  
