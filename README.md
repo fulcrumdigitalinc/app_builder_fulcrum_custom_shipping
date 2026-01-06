@@ -215,6 +215,7 @@ After deploying your App Builder actions, create the webhooks using the followin
 
 
 Same are suggested values that you can change for your needs.
+|**Hook Fields**| EMPTY (the whole payload will be sent)|
 
 - **For PaaS**:  
   Refer to `webhooks.xml`. Replace the placeholder URL with the actual URL of your deployed App Builder action. Configure Developer Console OAuth as documented here: https://developer.adobe.com/commerce/extensibility/webhooks/create-webhooks/#configure-developer-console-oauth.
