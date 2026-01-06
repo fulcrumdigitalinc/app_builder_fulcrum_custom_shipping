@@ -195,33 +195,24 @@ After deploying your App Builder actions, create the webhooks using the followin
   `plugin.magento.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates`  
   webhook method in **System → Webhooks → Webhook Subscriptions**. Configure the **Developer Console OAuth** credentials for the subscription (per the [Webhook guide](https://developer.adobe.com/commerce/extensibility/webhooks/create-webhooks/#configure-developer-console-oauth)) so Commerce includes the required Authorization headers when calling the `shipping-methods` action.
 
-Webhook settings
+## Webhook Settings
 
-**Webhook Method**	plugin.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates	(Target method that triggers the webhook)
+| Setting | Value | Description |
+|------|------|-------------|
+| **Webhook Method** | `plugin.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates` | Target method that triggers the webhook |
+| **Webhook Type** | `after` | Executes after core shipping rates are calculated |
+| **Batch Name** | `Your_Batch_Name` | Logical group for shipping hooks |
+| **Batch Order** | `0` | Execution order inside the batch |
+| **Hook Name** | `Your_Hook_Name` | Unique identifier for the hook |
+| **Hook Priority** | `0` | Optional priority override |
+| **URL** | `Your_Webhook_Url` | External service endpoint |
+| **Timeout** | `0` | Uses default timeout |
+| **Cache TTL** | `0` | No caching |
+| **Fallback Error Message** | `Your_Error_Msg` | Error returned if the webhook fails |
+| **Required** | `Required` | Checkout fails if webhook fails |
+| **Active** | `Yes` | Enables the hook |
+| **HTTP Method** | `POST` | Webhook request method |
 
-**Webhook Type**	after	(Executes after core shipping rates are calculated)
-
-**Batch Name** Your_Batch_Name	(Logical group for shipping hooks)
-
-**Batch Order**	0 (Execution order inside the batch)
-
-**Hook Name**	Your_Hook_Name (Unique identifier for the hook)
-
-**Hook Priority**	0 (Optional priority override)
-
-**URL**	Your_Webhook_Url (External service endpoint)
-
-**Timeout**	0	Uses default timeout
-
-**Cache TTL**	0	No caching
-
-**Fallback Error Message** Your_Error_Msg (Error returned if the webhook fails)
-
-**Required**	Required	(Checkout fails if webhook fails)
-
-**Active**	Yes	(Enables the hook)
-
-**HTTP Method**	POST	(Webhook request method)  
 
 Same are suggested values that you can change for your needs.
 
